@@ -182,6 +182,7 @@ insert_hostbyname (const char *h, char ** addr_list, int h_length)
   hostbyname[i].host = strdup (h);
 
   j=0;
+  hostbyname[i].idmax=0;
 
   while ( addr_list[j] && j < MAXALIAS)
   { 
