@@ -166,9 +166,7 @@ read_from_channel (int fd, char *buffer)
 {
   register int nbyt = 0;
 
-  nbyt = recv (fd, buffer, CHAN_SIZE_BUFF - 1, 0);
-
-  if (nbyt <= 0)
+  if ((nbyt = recv (fd, buffer, CHAN_SIZE_BUFF - 1, 0)) <= 0)
     {
       shutdown_ (NULL);
       return -1;
@@ -182,9 +180,8 @@ int
 write_to_channel (int fd, char *buffer, int bt)
 {
   register int wbyt = 0;
-  wbyt = send (fd, buffer, bt, 0);
 
-  if ((wbyt <= 0))
+  if ((wbyt = send (fd, buffer, bt, 0)) <= 0)
     {
       shutdown_ (NULL);
       return -1;

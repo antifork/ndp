@@ -350,15 +350,11 @@ flush_buffer_cache (void)
 {
   char *ptr;
 
-
   if ((ptr = strrchr (channel_ptr->buff_tmp, '\n')) != NULL)
     {
-
       if (write_to_channel (channel_ptr->fd_in,
 			    channel_ptr->buff_tmp,
-			    (int) ((u_char *) ptr -
-				   (u_char *) channel_ptr->buff_tmp) + 1) ==
-	  -1)
+			    (int) ((u_char *) ptr - (u_char *) channel_ptr->buff_tmp) + 1) == -1)
 	return _READY_;
       memmove (channel_ptr->buff_tmp, ptr + 1, strlen (ptr) + 1);
     }
@@ -870,10 +866,7 @@ main (int argc, char *argv[])
     usage (argv[0], VERSION, ID);
 
 
-  while (
-	 (c =
-	  getopt_long (argc, argv, "hs:l:vc:L:R:V:", long_options,
-		       (int *) 0)) != EOF)
+  while ( (c = getopt_long (argc, argv, "hs:l:vc:L:R:V:", long_options, (int *) 0)) != EOF)
     switch (c)
       {
 
@@ -922,6 +915,7 @@ main (int argc, char *argv[])
 	  }
 
 	break;
+
       case 'v':
 	fprintf (stderr, "%s %s\n", VERSION, ID);
 	exit (0);
@@ -935,8 +929,9 @@ main (int argc, char *argv[])
 		     optarg);
 	    exit (-1);
 	  }
-	strncpy (ndp.lhost, optarg, 79);
+        ndp.lhost= strdup(optarg); 
 	break;
+
       case 'R':
 	ndp.opts |= OPT_REMOTE_;
 	if (parse_input (optarg, &ndp.rhost_4b, &ndp.rport) == -1)
@@ -946,11 +941,11 @@ main (int argc, char *argv[])
 	    exit (-1);
 
 	  }
-	strncpy (ndp.rhost, optarg, 79);
+        ndp.rhost= strdup(optarg);
 	break;
 
       case 'V':
-	strncpy (ndp.vhost, optarg, 79);
+        ndp.vhost= strdup(optarg);
 	ndp.vhost_4b = getlongbyname (ndp.vhost);
 	break;
 
@@ -980,7 +975,6 @@ main (int argc, char *argv[])
       exit (-1);
     }
   signal (SIGHUP, _quit);
-
   /*
    * troubles with SIGHUP: if your system cares hangup signals after
    * your logout, you can easly remove the signal crap changing the
