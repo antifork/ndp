@@ -20,6 +20,7 @@
  * 
  */
 
+#include        <stdlib.h>
 #include 	<ndp_local.h>
 #include	<version.h>
 #include	<util.h>

@@ -40,7 +40,9 @@ send_msg (Channel *ptr, char *pad, ... )
 		l_ptr = ( ptr ? ptr : channel_ptr);
 
 		if(local_buff)
+			{
 			free(local_buff);
+			}
 
 		va_start(ap,pad);
 		vasprintf(&local_buff,pad,ap);

@@ -20,6 +20,7 @@
  *
  */
 
+#include <stdlib.h>
 #include <conf.h>
 
 extern ndpControl ndp;

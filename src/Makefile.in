@@ -20,8 +20,8 @@
 #
 
 CC = @CC@
-CFLAGS = @CFLAGS@ -I../include
-LIBS = @LIBS@
+CFLAGS = @CFLAGS@ -I../include #-D_USE_ALMEPRO -include /usr/include/almepro.h 
+LIBS = @LIBS@ #-lalmepro
 
 OBJS = ndp.o socket.o util.o md5.o irc.o passwd.o \
 command.o parser.o messager.o ctrl.o conf.o cmpt.o time.o usage.o @ALLOCA@ @GNU_ADDON_OBJ@
@@ -34,9 +34,9 @@ all:ndp md5
 	$(CC) $(CFLAGS) -c $< -o $@
 
 ndp:$(OBJS)
-	$(CC) $(LIBS) -o ../ndp $(OBJS)
+	$(CC) -o ../ndp $(OBJS) $(LIBS)
 	@echo "ndp done."
 
 md5:$(OBJS2)
-	$(CC) $(LIBS) -o../passwd_ndp $(OBJS2)
+	$(CC) -o../passwd_ndp $(OBJS2) $(LIBS)
 	@echo "passwd_ndp done."
