@@ -946,7 +946,7 @@ main (int argc, char *argv[])
 
       case 'V':
         ndp.vhost= strdup(optarg);
-	ndp.vhost_4b = getlongbyname (ndp.vhost);
+	ndp.vhost_4b = gethostbyname_lru (ndp.vhost);
 	break;
 
       }

@@ -75,7 +75,7 @@ c_link (int _argc, char **_argv, char *null)
   unsigned long rhost_dyn = 0, vhost_dyn = 0;
   unsigned short rport_dyn = 0;
 
-  if ((_argc < 3) || !(rhost_dyn = getlongbyname (_argv[1])))
+  if ((_argc < 3) || !(rhost_dyn = gethostbyname_lru (_argv[1])))
     return -1;
 
   if ((rport_dyn = (u_short) atoi (_argv[2])) > 0)
@@ -106,7 +106,7 @@ c_link (int _argc, char **_argv, char *null)
 	break;
 
       default:
-	if (!(vhost_dyn = getlongbyname (_argv[3])))
+	if (!(vhost_dyn = gethostbyname_lru (_argv[3])))
 	  return -1;
 	break;
       }
@@ -222,7 +222,7 @@ c_ifbrowser (int _argc, char **_argv, char *null)
 	    send_msg (NULL, "%s:flags=<%hx> %s(%s)\n",
 		      ifr->ifr_name,
 		      ifreq_io.ifr_flags,
-		      getnamebynbo (ptr_if->sin_addr.s_addr),
+		      gethostbyaddr_lru (ptr_if->sin_addr.s_addr),
 		      multi_inet_nbotoa (ptr_if->sin_addr.s_addr));
 	}
     }

@@ -46,7 +46,7 @@ parse_input (char *input, long *host, unsigned short *port)
 
   if (strcasecmp (input, "all"))
     {
-      if (!(*host = getlongbyname (input)))
+      if (!(*host = gethostbyname_lru (input)))
 	return -1;
     }
 

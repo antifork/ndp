@@ -48,14 +48,14 @@ parseconf (char *config)
         ndp.lhost= ptr->if_ip;
 
 	if (ptr->if_ip)
-	  ndp.lhost_4b = getlongbyname (ndp.lhost);
+	  ndp.lhost_4b = gethostbyname_lru (ndp.lhost);
 
 	ndp.lport = ptr->if_port;
 
 	if (ptr->if_vhost != NULL)
 	  {
             ndp.vhost= ptr->if_vhost;
-	    ndp.vhost_4b = getlongbyname (ndp.vhost);
+	    ndp.vhost_4b = gethostbyname_lru (ndp.vhost);
 	  }
 	break;
       case feature_label:
@@ -82,8 +82,8 @@ parseconf (char *config)
         ndp.jvhost       = ptr->ircer2_vhost;
 	ndp.rhost        = ptr->ircer2_lhost;
 
-	ndp.jvhost_4b    = getlongbyname (ndp.jvhost);
-	ndp.rhost_4b     = getlongbyname (ndp.rhost);
+	ndp.jvhost_4b    = gethostbyname_lru (ndp.jvhost);
+	ndp.rhost_4b     = gethostbyname_lru (ndp.rhost);
 	ndp.rport        = ptr->ircer2_port;
 	break;
       case oport_label:
