@@ -2,7 +2,7 @@
  *  $Id$
  *  %ndp: time tools 
  *
- *  Copyright (c) 1999 bonelli `awgn' nicola <awgn@antifork.org>
+ *  Copyright (c) 1999 Bonelli Nicola <bonelli@antifork.org>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -28,17 +28,14 @@
 extern Channel *channel_ptr;
 extern struct timeval mytime;
 
-int         diff_time (long, long);
-void        rehash_time (void);
-
+int diff_time (long, long);
+void rehash_time (void);
 
 int
 diff_time (long now, long old)
 {
-      return ((now - old) > 0 ? (now - old) : (0));
-
+  return ((now - old) > 0 ? (now - old) : (0));
 }
-
 
 void
 rehash_time (void)
@@ -46,13 +43,13 @@ rehash_time (void)
 /* rehash mytime: sec/usec or sec/0 due to the presence of GETTIMEOFDAY or less */
 
 #ifdef HAVE_GETTIMEOFDAY
-      gettimeofday (&mytime, NULL);
+  gettimeofday (&mytime, NULL);
 #else
-      mytime.tv_sec = time (NULL);
-      mytime.tv_usec = 0;
+  mytime.tv_sec = time (NULL);
+  mytime.tv_usec = 0;
 #endif
 
-      channel_ptr->sec = mytime.tv_sec;
-      return;
+  channel_ptr->sec = mytime.tv_sec;
+  return;
 
 }

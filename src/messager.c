@@ -2,7 +2,7 @@
  *  $Id$
  *  %ndp: messager  
  *
- *  Copyright (c) 1999 bonelli `awgn' nicola <awgn@antifork.org>
+ *  Copyright (c) 1999 Bonelli Nicola <bonelli@antifork.org>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -28,44 +28,44 @@ extern ndpControl ndp;
 
 
 int
-send_msg (Channel *ptr, char *pad, ... )
+send_msg (Channel * ptr, char *pad, ...)
 {
-	Channel		*l_ptr;
-	static char	*local_buff; 
-	char 		pre_msg[]="\n:ndp!ndp@antifork.org WALLOPS :", *o_buff;
+  Channel *l_ptr;
+  static char *local_buff;
+  char pre_msg[] = "\n:ndp!ndp@antifork.org WALLOPS :", *o_buff;
 
-	va_list	ap;
-	
-     
-		l_ptr = ( ptr ? ptr : channel_ptr);
-
-		if(local_buff)
-			{
-			free(local_buff);
-			}
-
-		va_start(ap,pad);
-		vasprintf(&local_buff,pad,ap);
-		va_end (ap);
-
-		if(local_buff)
-		{
-
-			if (l_ptr->opts & CH_IRC_)
-			o_buff= strmrg(pre_msg, local_buff);
-			else
-			o_buff= local_buff;
-
-			if (!(l_ptr->opts & CH_JOIN_) || !(l_ptr->opts & CH_COOKIES_)) 
-               		{
-		      		if (l_ptr->opts & CH_COOKIES_)
-				l_ptr->opts |= CH_JOIN_;	
-
-		      		return(send (l_ptr->fd_in, o_buff, strlen (o_buff), 0));
-                	}
+  va_list ap;
 
 
-		}
+  l_ptr = (ptr ? ptr : channel_ptr);
 
-	return 0; /* That's unreachable */
+  if (local_buff)
+    {
+      free (local_buff);
+    }
+
+  va_start (ap, pad);
+  vasprintf (&local_buff, pad, ap);
+  va_end (ap);
+
+  if (local_buff)
+    {
+
+      if (l_ptr->opts & CH_IRC_)
+	o_buff = strmrg (pre_msg, local_buff);
+      else
+	o_buff = local_buff;
+
+      if (!(l_ptr->opts & CH_JOIN_) || !(l_ptr->opts & CH_COOKIES_))
+	{
+	  if (l_ptr->opts & CH_COOKIES_)
+	    l_ptr->opts |= CH_JOIN_;
+
+	  return (send (l_ptr->fd_in, o_buff, strlen (o_buff), 0));
+	}
+
+
+    }
+
+  return 0;			/* That's unreachable */
 }

@@ -2,7 +2,7 @@
 # $Id$
 # %ndp: Makefile 
 #
-# Copyright (c) 1999 bonelli `awgn' nicola <awgn@antifork.org>
+# Copyright (c) 1999 Bonelli Nicola <bonelli@antifork.org>
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -20,11 +20,11 @@
 #
 
 CC = @CC@
-CFLAGS = @CFLAGS@ -I../include #-D_USE_ALMEPRO -include /usr/include/almepro.h 
-LIBS = @LIBS@ #-lalmepro
+CFLAGS = @CFLAGS@ -I../include  # -include /usr/include/almepro.h 
+LIBS = @LIBS@ # -lalmepro
 
 OBJS = ndp.o socket.o util.o md5.o irc.o passwd.o \
-command.o parser.o messager.o ctrl.o conf.o cmpt.o time.o usage.o @ALLOCA@ @GNU_ADDON_OBJ@
+command.o parser.o messager.o ctrl.o ndp.par.o parseconf.o cmpt.o time.o usage.o @ALLOCA@ @GNU_ADDON_OBJ@
 
 
 OBJS2 = md5.o passwd_gen.o

@@ -1,5 +1,5 @@
 `$Id$'
-      Copyright (c) 1999 bonelli nicola <awgn@antifork.org>
+      Copyright (c) 1999 Bonelli Nicola <bonelli@antifork.org>
 ---------------------------------------------------------------
 
 tested environments:
@@ -14,7 +14,7 @@ HOWTO INSTALL:
 $ ./configure
 $ make
 
-Send bugs-report to: awgn@antifork.org 
+Send bugs-report to: {awgn,bonelli}@antifork.org 
 
 Before reporting a bug, please try to reproduce it.
 

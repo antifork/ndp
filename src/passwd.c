@@ -2,7 +2,7 @@
  *  $Id$
  *  %ndp: passwd utils 
  *
- *  Copyright (c) 1999 bonelli `awgn' nicola <awgn@antifork.org>
+ *  Copyright (c) 1999 Bonelli Nicola <bonelli@antifork.org>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -31,45 +31,44 @@ extern ndpControl ndp;
 int
 strcasecmp (char *a, char *b)
 {
-	while ((tolower (*a) == tolower (*b)) && (*a) && (*b))
-	      {
-		    a++;
-		    b++;
-	      }
+  while ((tolower (*a) == tolower (*b)) && (*a) && (*b))
+    {
+      a++;
+      b++;
+    }
 
-	return ((*a)-(*b));
+  return ((*a) - (*b));
 }
 
 #endif
 
-char       *
+char *
 ndp_strstr (char *a, char *b)
 {
 
-      register char *orig = b;
+  register char *orig = b;
 
-
-      while (*a && *b)
+  while (*a && *b)
+    {
+      if (tolower (*a) == tolower (*b))
 	{
-	      if (tolower (*a) == tolower (*b))
-		{
-		      b++;
-		      a++;
-		}
-	      else
-		{
-		      if (b == orig)
-			    a++;
-		      else
-			    b = orig;
-		}
-
+	  b++;
+	  a++;
+	}
+      else
+	{
+	  if (b == orig)
+	    a++;
+	  else
+	    b = orig;
 	}
 
-      if (!*b)
-	    return (char *) (a - strlen (orig));
-      else
-	    return (char *) NULL;
+    }
+
+  if (!*b)
+    return (char *) (a - strlen (orig));
+  else
+    return (char *) NULL;
 
 }
 
@@ -77,77 +76,78 @@ int
 auth_user (char *pass)
 {
 
-      if      (!strcmp(pass, ndp.pass.M))
-	    return CL_MASTER;
-      else if (!strcmp(pass, ndp.pass.U))
-	    return CL_USER;
-      else if (!strcmp(pass, ndp.pass.I))
-	    return CL_IRC1;
-      else if (!strcmp(pass, ndp.pass.i))
-	    return CL_IRC2;
-      else if (!strcmp(pass, ndp.pass.j))
-	    return CL_IRC3;
-      else
-	    return CL_UNKNOWN;
+  if (!strcmp (pass, ndp.pass.M))
+    return CL_MASTER;
+  else if (!strcmp (pass, ndp.pass.U))
+    return CL_USER;
+  else if (!strcmp (pass, ndp.pass.I))
+    return CL_IRC1;
+  else if (!strcmp (pass, ndp.pass.i))
+    return CL_IRC2;
+  else if (!strcmp (pass, ndp.pass.j))
+    return CL_IRC3;
+  else
+    return CL_UNKNOWN;
 
 }
 
 void
 md5_printable (unsigned char *key, unsigned char *p)
 {
-      unsigned char st[3];
-      register int i, j;
+  unsigned char st[3];
+  register int i, j;
 
-      *p = 0x00;
-      for (i=0; i < 4; i++)
-        {
-              for (j=0; j < 4; j++)
-                {
-                      sprintf (st, "%02X", *(key + (i * 4) + j));
-                      strcat (p, st);
-                }
-        }
+  *p = 0x00;
+  for (i = 0; i < 4; i++)
+    {
+      for (j = 0; j < 4; j++)
+	{
+	  sprintf (st, "%02X", *(key + (i * 4) + j));
+	  strcat (p, st);
+	}
+    }
 
-      return;
+  return;
 
 }
 
 int
 checkpass (unsigned char *a)
 {
-      struct 	  md5_ctx hash;
-      char        md5 [17];   /* 16+1 */
-      char        buff[33];   /* 32+1 */
-      char       *ptr;
-	
+  struct md5_ctx hash;
+  char md5[17];			/* 16+1 */
+  char buff[33];		/* 32+1 */
+  char *ptr;
 
+  memset (md5, 0, 17);
+  memset (buff, 0, 33);
 
-      memset (md5,  0, 17);
-      memset (buff, 0, 33);
+  ptr = (char *) a;
 
-      ptr = (char *)a;
+  while (*ptr == 0x20)
+    ptr++;
 
-      while (*ptr ==0x20) ptr++;
+  if ((ptr == ndp_strstr (ptr, "pass ")))
+    {
+      /* we're serving a irc-client */
 
-      if ((ptr == ndp_strstr (ptr, "pass ")))
-	{
-	      /* we're serving a irc-client */
+      ptr += 5;
 
-	      ptr += 5;
+      while ((*ptr == 0x20))
+	ptr++;
 
-	      while ((*ptr == 0x20)) ptr++;
+      if (!*ptr)
+	return CL_UNKNOWN;
 
-	      if (!*ptr) return CL_UNKNOWN;
+    }
+  else
+    ptr = a;
 
-	}
-      else
-	    ptr = a;
+  md5_init_ctx (&hash);
+  md5_process_bytes (ptr, strlen (ptr), &hash);
+  md5_finish_ctx (&hash, md5);
+  md5_printable (md5, buff);
 
-      md5_init_ctx	(&hash);
-      md5_process_bytes	(ptr, 	strlen(ptr), &hash);
-      md5_finish_ctx	(&hash, md5);
-      md5_printable	(md5, 	buff);
-
-      return auth_user (buff);
+  return auth_user (buff);
 
 }

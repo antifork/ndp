@@ -2,7 +2,7 @@
  *  $Id$
  *  %ndp: md5 utils 
  *
- *  Copyright (c) 1999 bonelli `awgn' nicola <awgn@antifork.org>
+ *  Copyright (c) 1999 Bonelli Nicola <bonelli@antifork.org>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -57,54 +57,56 @@ char *strchr (), *strrchr ();
 # include <unistd.h>
 #endif
 
-unsigned char  pass[MAXPASSWDLEN + 1], r_pass[MAXPASSWDLEN + 1], md5[17], buff[33];
+unsigned char pass[MAXPASSWDLEN + 1], r_pass[MAXPASSWDLEN + 1], md5[17],
+  buff[33];
 
 void
 md5_printable (unsigned char *key, unsigned char *p)
 {
-      unsigned char st[3];
-      register int i, j;
+  unsigned char st[3];
+  register int i, j;
 
-      *p = 0x00;
-      for (i=0; i < 4; i++)
-        {
-              for (j=0; j < 4; j++)
-                {
-                      sprintf (st, "%02X", *(key + (i * 4) + j));
-                      strcat (p, st);
-                }
-        }
+  *p = 0x00;
+  for (i = 0; i < 4; i++)
+    {
+      for (j = 0; j < 4; j++)
+	{
+	  sprintf (st, "%02X", *(key + (i * 4) + j));
+	  strcat (p, st);
+	}
+    }
 
-      return;
+  return;
 
 }
 
 int
 main (int argc, char **argv)
 {
-      int         ct = 0;
-      struct md5_ctx hash;
+  int ct = 0;
+  struct md5_ctx hash;
 
-      printf ("NOTE: password must be long at least %i chars.\n\n", MINPASSWDLEN);
+  printf ("NOTE: password must be long at least %i chars.\n\n", MINPASSWDLEN);
 
-      do
+  do
+    {
+      if ((ct++) == MAXTRYTIME)
 	{
-	      if ((ct++) == MAXTRYTIME)
-		{
-		      printf ("Nothing was changed.\n");
-		      exit (0);
-		}
-	      strncpy (pass, getpass ("Password: "), MAXPASSWDLEN);
-	      strncpy (r_pass, getpass ("Re-enter password: "), MAXPASSWDLEN);
+	  printf ("Nothing was changed.\n");
+	  exit (0);
 	}
-      while (strncmp (r_pass, pass, MAXPASSWDLEN) || (strlen (pass) < MINPASSWDLEN));
-      
-      md5_init_ctx	(&hash);
-      md5_process_bytes	(pass, 	strlen(pass), &hash);
-      md5_finish_ctx	(&hash, md5);
-      md5_printable 	(md5, 	buff);
+      strncpy (pass, getpass ("Password: "), MAXPASSWDLEN);
+      strncpy (r_pass, getpass ("Re-enter password: "), MAXPASSWDLEN);
+    }
+  while (strncmp (r_pass, pass, MAXPASSWDLEN)
+	 || (strlen (pass) < MINPASSWDLEN));
 
-      printf ("md5: %s\n", buff);
-      exit (0);
+  md5_init_ctx (&hash);
+  md5_process_bytes (pass, strlen (pass), &hash);
+  md5_finish_ctx (&hash, md5);
+  md5_printable (md5, buff);
+
+  printf ("md5: %s\n", buff);
+  exit (0);
 
 }

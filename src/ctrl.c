@@ -2,7 +2,7 @@
  *  $Id$
  *  %ndp: string utils 
  *
- *  Copyright (c) 1999 bonelli `awgn' nicola <awgn@antifork.org>
+ *  Copyright (c) 1999 Bonelli Nicola <bonelli@antifork.org>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -25,38 +25,41 @@
 
 extern Channel *channel_ptr;
 
-void 
+void
 void_cr_lf (u_char * ptr, int mode)
 {
-      char *ptr_1, *ptr_2;
+  char *ptr_1, *ptr_2;
 
-      if ( ptr == NULL ) return;
+  if (ptr == NULL)
+    return;
 
-      while (*ptr)
+  while (*ptr)
+    {
+
+      ptr_1 = ptr + 1;
+      ptr_2 = ptr + 2;
+
+      if (mode)
 	{
 
-	ptr_1=ptr+1;
-	ptr_2=ptr+2;
+	  if ((*ptr == 0xf2) && (!*ptr_1 || (*ptr_1 == 0x0d)))
+	    *ptr = 0x00;
+	}
 
-	if (mode)
+      else
 	{
-
-        	if ( (*ptr == 0xf2) && ( !*ptr_1  || (*ptr_1 == 0x0d ) ) )    	
-			*ptr = 0x00;
+	  if (((*ptr == 0x0a) || (*ptr == 0x0d)) && (!*ptr_1 || !*ptr_2))
+	    {
+	      *ptr = 0x00;
+	      return;
+	    }
 	}
 
-	else 	{
-		if ( ( (*ptr == 0x0a) || (*ptr == 0x0d) ) && ( !*ptr_1 || !*ptr_2 ) ) { 
-			*ptr= 0x00; 
-			return;
-			}
-		}
+      ptr++;
 
-	ptr++;
+    }
 
-	}
-
-      return;
+  return;
 
 }
 
@@ -64,15 +67,15 @@ void_cr_lf (u_char * ptr, int mode)
 char
 getlastchar (u_char * buff)
 {
-      if ( buff == NULL ) return 0x00;
+  if (buff == NULL)
+    return 0x00;
 
-      while (*buff != 0x00)
-	{
-	      if (*buff == 0x0a) *(buff + 1) = 0x00;
-	      buff++;
-	}
+  while (*buff != 0x00)
+    {
+      if (*buff == 0x0a)
+	*(buff + 1) = 0x00;
+      buff++;
+    }
 
-      return (char) *(--buff);
+  return (char) *(--buff);
 }
-
-

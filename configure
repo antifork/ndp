@@ -752,7 +752,7 @@ fi
 
 
 if test $ac_cv_prog_gcc = yes; then
-    CCOPTS='-O3 -funroll-loops -fomit-frame-pointer -pipe -Wall'
+    CCOPTS='-O3 -funroll-loops -pipe '
     CFLAGS="$CCOPTS"
 fi
 

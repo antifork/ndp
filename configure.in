@@ -17,7 +17,7 @@ AC_PROG_CC
 dnl Use these compiler flags if we have gcc.
 
 if test $ac_cv_prog_gcc = yes; then
-    CCOPTS='-O3 -funroll-loops -fomit-frame-pointer -pipe -Wall'
+    CCOPTS='-O3 -funroll-loops -pipe '
     CFLAGS="$CCOPTS"
 fi
 

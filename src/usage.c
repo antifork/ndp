@@ -2,7 +2,7 @@
  *  $Id$
  *  %ndp: usage
  *
- *  Copyright (c) 1999 bonelli `awgn' nicola <awgn@antifork.org>
+ *  Copyright (c) 1999 Bonelli Nicola <bonelli@antifork.org>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -26,23 +26,22 @@
 
 /*
  */
-void        usage (char *, char *, char *);
+void usage (char *, char *, char *);
 
 void
 usage (char *name, char *VERSION, char *ID)
 {
-      fprintf (stderr, "usage: %s [option]\n", name);
+  fprintf (stderr, "usage: %s [option]\n", name);
 
-      fprintf (stderr,
-		"   -L  --local     HOST:PORT   local host and listening port (all=INADDR_ANY)\n"
-		"   -R  --remote    HOST:PORT   remote host & port\n"
-		"   -V  --virtual   HOST        default vhost for outgoing connection\n\n"
-		"   -c  --conf      file        interactive mode (pseudo shell)\n"
-		"   -s [cl]                     stream (c=char-buffered l=line-buffered)\n"
-		"   -l [0-2]                    log level (default=2)\n"
-		"   -v  --version\n"
-		"   -h  --help\n");
+  fprintf (stderr,
+	   "   -L  --local     HOST:PORT   local host and listening port (all=INADDR_ANY)\n"
+	   "   -R  --remote    HOST:PORT   remote host & port\n"
+	   "   -V  --virtual   HOST        default vhost for outgoing connection\n\n"
+	   "   -c  --conf      file        interactive mode (pseudo shell)\n"
+	   "   -s [cl]                     stream (c=char-buffered l=line-buffered)\n"
+	   "   -l [0-2]                    log level (default=2)\n"
+	   "   -v  --version\n" 
+           "   -h  --help\n");
 
-      exit (0);
+  exit (0);
 }
-

@@ -84,7 +84,8 @@ strncasecmp (const char *s1, const char *s2, size_t n)
       c2 = tolower (*p2++);
       if (c1 == '\0' || c1 != c2)
 	return c1 - c2;
-    } while (--n > 0);
+    }
+  while (--n > 0);
 
   return c1 - c2;
 }
@@ -118,7 +119,7 @@ strstr (phaystack, pneedle)
   b = *needle;
   if (b != '\0')
     {
-      haystack--;				/* possible ANSI violation */
+      haystack--;		/* possible ANSI violation */
       do
 	{
 	  c = *++haystack;
@@ -134,8 +135,8 @@ strstr (phaystack, pneedle)
       goto jin;
 
       for (;;)
-        {
-          register chartype a;
+	{
+	  register chartype a;
 	  register const unsigned char *rhaystack, *rneedle;
 
 	  do
@@ -148,10 +149,10 @@ strstr (phaystack, pneedle)
 	      a = *++haystack;
 	      if (a == '\0')
 		goto ret0;
-shloop:	    }
-          while (a != b);
+	  shloop:}
+	  while (a != b);
 
-jin:	  a = *++haystack;
+	jin:a = *++haystack;
 	  if (a == '\0')
 	    goto ret0;
 
@@ -178,16 +179,15 @@ jin:	  a = *++haystack;
 	      }
 	    while (*rhaystack == a);
 
-	  needle = rneedle;		/* took the register-poor approach */
+	  needle = rneedle;	/* took the register-poor approach */
 
 	  if (a == '\0')
 	    break;
-        }
+	}
     }
 foundneedle:
-  return (char*) haystack;
+  return (char *) haystack;
 ret0:
   return 0;
 }
 #endif /* not HAVE_STRSTR */
-

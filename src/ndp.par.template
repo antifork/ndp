@@ -1,0 +1,14 @@
+#
+# ndp.par.template 
+#
+
+if(1)	  =(ip$)str:(port$)short:(vhost)host
+feature(1)=(idle)int[0,1000000]:(idlep)int[0,100000]:(maxuser)int[0,100]:(maxerr)int[0,100]
+
+master(1,)= (passwd$)str
+user      = (passwd$)str
+ircer0    = (passwd$)str
+ircer1    = (passwd$)str:(vhost$)host
+ircer2    = (passwd$)str:(vhost$)host:(lhost$)host:(port)short
+
+oport     = (low)short:(high)short
