@@ -26,6 +26,8 @@
 #include <errno.h>
 #include <stdarg.h>
 
+#include <time.h>
+
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -40,10 +42,11 @@
 /* LRU must be a power of 2, and cannot be longer than 65536 elements. 
    Better performances can be obtained with a size over 32 ( 64 or 128).
 */
-#define LRU  64 
+#define LRU  		64 
 #endif
 
-#define MAXALIAS 16
+#define MAXALIAS        16
+#define EXPDAY          8       
 
 /* test */
 
@@ -143,6 +146,8 @@ search_hostbyname (const char *host)
 {
   register int i = 0;
   register long ret = -1;
+  time_t now;
+  struct tm *tm_now;
 
   /* i = hash (..) */
 
@@ -156,17 +161,30 @@ search_hostbyname (const char *host)
   /* reset */
 
   if ( hostbyname[i].id == hostbyname[i].idmax )
-	{
-	hostbyname[i].id = 0;
-	}
+        {
+        hostbyname[i].id = 0;
+        }
 
   if ( !strcmp(host,hostbyname[i].host ))
         {
-	ret= hostbyname[i].addr[hostbyname[i].id];
-	hostbyname[i].id++;
-	}
-	
-        return ret;
+        ret= hostbyname[i].addr[hostbyname[i].id];
+        hostbyname[i].id++;
+        }
+
+  /* expired ? */
+
+  time(&now);
+  tm_now = gmtime (&now);
+
+  if ( tm_now->tm_yday - hostbyname[i].yday > EXPDAY )
+        {
+        /* expired */
+        return -1;
+        }
+
+  /* ok */
+
+  return ret;
 
 }
 
@@ -174,6 +192,8 @@ static void
 insert_hostbyname (const char *h, char ** addr_list, int h_length)
 {
   register int i,j;
+  time_t now;
+  struct tm * tm_now;
 
   i = hash(h, strlen(h));
 
@@ -185,13 +205,18 @@ insert_hostbyname (const char *h, char ** addr_list, int h_length)
   hostbyname[i].idmax=0;
 
   while ( addr_list[j] && j < MAXALIAS)
-  { 
+  {
      bcopy (addr_list[j], (char *) &hostbyname[i].addr[j], h_length);
      j++;
      hostbyname[i].idmax++;
   }
-   
+
   hostbyname[i].id=1;
+
+  time(&now);
+  tm_now = gmtime (&now);
+
+  hostbyname[i].yday = tm_now->tm_yday;
 
   return;
 }
@@ -203,6 +228,8 @@ search_hostbyaddr (const unsigned long addr)
 {
   register int i;
   static char *ret = NULL;
+  time_t now;
+  struct tm *tm_now;
 
   SFREE (ret);
 
@@ -214,6 +241,18 @@ search_hostbyaddr (const unsigned long addr)
       {
       ret = strdup (hostbyaddr[i].host);
       }
+  /* expired ? */
+
+  time(&now);
+  tm_now = gmtime (&now);
+
+  if ( tm_now->tm_yday - hostbyaddr[i].yday > EXPDAY )
+        {
+        /* expired */
+        return (char *)NULL;
+        }
+
+  /* ok */
 
   return ret;
 }
@@ -222,6 +261,8 @@ static void
 insert_hostbyaddr (const char *h, const unsigned long addr)
 {
   register int i;
+  time_t now;
+  struct tm *tm_now;
 
   i = hash ((char *)&addr,4);
 
@@ -229,6 +270,14 @@ insert_hostbyaddr (const char *h, const unsigned long addr)
 
   hostbyaddr[i].host = strdup (h);
   hostbyaddr[i].addr[0] = addr;
+
+  hostbyaddr[i].id   =0;
+  hostbyaddr[i].idmax=0;
+
+  time(&now);
+  tm_now = gmtime (&now);
+
+  hostbyaddr[i].yday = tm_now->tm_yday;
 
   return;
 }
