@@ -1,4 +1,4 @@
-/* apg.db 01/05/19 rel 01 $Id$ */
+/* apg.db 01/06/18 rel 02 $Id$ */
 /* 
  *  $Id$
  *  apg.tab.h

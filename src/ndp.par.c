@@ -1,4 +1,4 @@
-/* apg.db 01/05/19 rel 01 $Id$ */
+/* apg.db 01/06/18 rel 02 $Id$ */
 /*
  *  $Id$
  *  apg.par.c
@@ -119,9 +119,10 @@ int c_index[256];
 \
 ( '0' <= x && x <= '3' ? 2 : ( '4' <= x && x <= '7' ? 1 : 0 ) )
 
-#define C_LIMIT(x,v,y)\
+#define C_LIMIT(t,x,v,y)\
 \
-( (x|y) ? ( x<= v && v<=y ) : 1 )
+( (x|y) ? ((t == T_U_32) ? \
+((unsigned int)x<=(unsigned int)v ) && ((unsigned int)v<=(unsigned int)y) : ((x<=v) && (v<=y))) : (1) )
 
 #define M_STRTOL(token,addr_endptr)\
 \
@@ -681,7 +682,7 @@ token_analysis (char *token, int line_id, int token_id)
       if (!*endptr)
 	{
 
-	  if (C_LIMIT (L_LOW (line_id, token_id), sp, L_HIGH (line_id, token_id)))
+	  if (C_LIMIT (L_TYPE (line_id, token_id),L_LOW (line_id, token_id), sp, L_HIGH (line_id, token_id)))
 	    {
 	      switch (L_TYPE (line_id, token_id))
 		{
@@ -749,7 +750,7 @@ token_analysis (char *token, int line_id, int token_id)
 
 	if (! (L_LOW (line_id, token_id)
 	    || L_HIGH (line_id, token_id))
-	    || C_LIMIT (L_LOW (line_id, token_id), strlen (pp), L_HIGH (line_id, token_id)))
+	    || C_LIMIT (L_TYPE (line_id, token_id),L_LOW (line_id, token_id), strlen (pp), L_HIGH (line_id, token_id)))
 	  {
 	    P_PUSH (apg_stream, offset, pp);
 	    return;
