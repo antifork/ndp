@@ -144,7 +144,7 @@ c_ifbrowser(int _argc, char **_argv, char *null)
 
         char            buffer[10240];
         int             sd;
-        struct ifreq   *ifr, *iflast;
+        struct ifreq   *ifr, *iflast, ifreq_io;
         struct ifconf   ifc;
         struct sockaddr_in *ptr_if;
 
@@ -187,11 +187,34 @@ c_ifbrowser(int _argc, char **_argv, char *null)
         {
                 if (*(char *) ifr) {
                         ptr_if = (struct sockaddr_in *) & ifr->ifr_addr;
-                        send_msg (NULL,"%s\t%s(%s)\n", ifr->ifr_name,
-                               getnamebynbo(ptr_if->sin_addr.s_addr),multi_inet_nbotoa(ptr_if->sin_addr.s_addr));
 
-                        }
+                        /*
+                         * this setup ifreq structure, needed by
+                         * SIOCGIFFLAGS
+                         */
 
+                        memcpy(&ifreq_io, ifr, sizeof(ifr->ifr_name) + sizeof(struct sockaddr_in));
+
+                        /*
+                         * The SIOCGIFFLAGS gets ifreq_io (IO call) and
+                         * fills it with new values
+                         */
+
+                        if (ioctl(sd, SIOCGIFFLAGS, &ifreq_io) < 0) {
+                                send_msg (NULL, "SIOCGIFFLAGS:%s\n", strerror(errno));
+				return 1; } 
+
+
+			/* Skip IFF_DOWN
+	 		*/
+ 
+			if (	(ifreq_io.ifr_flags & 0x01) ) 
+				send_msg (NULL,"%s:flags=<%hx> %s(%s)\n", 
+				ifr->ifr_name,
+				ifreq_io.ifr_flags,
+				getnamebynbo(ptr_if->sin_addr.s_addr),
+				multi_inet_nbotoa(ptr_if->sin_addr.s_addr));
+				}
         }
 
         close(sd);

@@ -31,50 +31,39 @@ int
 send_msg (Channel *ptr, char *pad, ... )
 {
 	Channel		*l_ptr;
-	static char	*local_buff=NULL; 
-	
+	static char	*local_buff; 
 	char 		pre_msg[]="\n:ndp!ndp@antifork.org WALLOPS :", *o_buff;
-
-	int		index=2,step=0,pad_len=0;
-
 
 	va_list	ap;
 	
      
-	l_ptr = ( ptr ? ptr : channel_ptr);
+		l_ptr = ( ptr ? ptr : channel_ptr);
 
+		if(local_buff)
+			free(local_buff);
 
-	if (pad)
-	{      
 		va_start(ap,pad);
-	
-		step    = ((strlen(pad) & 0xfffffe0) + 32);
-
-		pad_len = strlen(pad);
-
-		local_buff = ( char *) realloc (local_buff, index * step);
-
-		while ( vsnprintf(local_buff, index * step,pad, ap) == -1) 
-			{
-			index++;
-			local_buff = ( char *) realloc (local_buff,index * step );
-			}
-
+		vasprintf(&local_buff,pad,ap);
 		va_end (ap);
-	}
 
-		if (l_ptr->opts & CH_IRC_)
+		if(local_buff)
+		{
+
+			if (l_ptr->opts & CH_IRC_)
 			o_buff= strmrg(pre_msg, local_buff);
-		else
+			else
 			o_buff= local_buff;
 
-		if (!(l_ptr->opts & CH_JOIN_) || !(l_ptr->opts & CH_COOKIES_)) 
-                {
-		      if (l_ptr->opts & CH_COOKIES_)
-			l_ptr->opts |= CH_JOIN_;	
+			if (!(l_ptr->opts & CH_JOIN_) || !(l_ptr->opts & CH_COOKIES_)) 
+               		{
+		      		if (l_ptr->opts & CH_COOKIES_)
+				l_ptr->opts |= CH_JOIN_;	
 
-		      return(send (l_ptr->fd_in, o_buff, strlen (o_buff), 0));
-                }
+		      		return(send (l_ptr->fd_in, o_buff, strlen (o_buff), 0));
+                	}
+
+
+		}
 
 	return 0; /* That's unreachable */
 }

@@ -27,16 +27,15 @@ version.o: version.h
 
 version.h: ./VERSION
 	@rm -f include/$@
-	sed -e 's/.*/#define VERSION "&"/' ./VERSION > include/$@
+	@sed -e 's/.*/#define VERSION "&"/' ./VERSION > include/$@
+	@./config.guess | sed -e 's/.*/#define CPU_MFR_OPSYS "&"/' >> include/$@
+	@cat INFO | awk '{print "#define AUTHOR \"" $$2 " " $$3 "\"" }' >> include/$@
+	@cat INFO | awk '{print "#define MAIL_SUPPORT \"" $$4 "\"" }' >> include/$@
 
 src/ndp: version.h
-	@echo "-------------------------------------------------------------------------------"
-	@echo -n "Making " ; cat -e ./VERSION  
-	@echo "Send bugs-report to: awgn@antifork.org"
-	@echo "before reporting a bug, please try to reproduce it."
-	@echo "-------------------------------------------------------------------------------"
+	@./header
 	cd src/ && make
 clean:
 	rm -f src/*BAK src/*~ src/*.o ndp passwd_ndp ndp.pid 
 distclean:
-	rm -f *.log *.cache src/Makefile src/*BAK src/*~ include/defs.h include/version.h src/*.o ndp passwd_ndp ndp.pid 
+	rm -f *.log *.cache src/Makefile src/*BAK src/*~ include/{defs,version}.h src/*.o ndp passwd_ndp ndp.pid 

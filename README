@@ -5,8 +5,8 @@
 tested environments:
 
 -(Linux libc[56] glibc[12]
--(OpenBSD 2.[56]
--(FreeBSD 3.3.x
+-(OpenBSD 2.[567]
+-(FreeBSD 3.3.x FreeBSD 4
 -(NetBSD ?
  
 HOWTO INSTALL:

@@ -261,12 +261,13 @@ push_buffer_cache(char *segment)
 
 
 		if (channel_ptr->buff_tmp == NULL) {
-			channel_ptr->buff_tmp_size = ((seglen + channel_ptr->buff_tmp_size + 1) & 0xffffff00) + 256;
+			channel_ptr->buff_tmp_size = ((seglen + channel_ptr->buff_tmp_size + 1) | 0xff);
 			channel_ptr->buff_tmp = (u_char *) calloc(channel_ptr->buff_tmp_size, 1);
 		} else {
 
 			if ((strlen(channel_ptr->buff_tmp) + seglen + 1) > channel_ptr->buff_tmp_size) {
-				channel_ptr->buff_tmp_size = ((seglen + channel_ptr->buff_tmp_size + 1) & 0xffffff00) + 256;
+
+				channel_ptr->buff_tmp_size = ((seglen + channel_ptr->buff_tmp_size + 1) | 0xff);
 				ptr = strdup(channel_ptr->buff_tmp);
 				channel_ptr->buff_tmp = (u_char *) realloc(channel_ptr->buff_tmp, channel_ptr->buff_tmp_size);
 				memcpy(channel_ptr->buff_tmp, ptr, strlen(ptr) + 1);
@@ -549,7 +550,7 @@ reset_chan(Channel * ptr)
 	ptr->buff_tmp_size = 0;
 	ptr->class = CL_UNKNOWN;
 	ptr->opts |= CH_UNKNOWN_;
-	ptr->next = (Channel *) saved;	/* This save the channel-chain */
+	ptr->next = (Channel *) saved;	/* This save the channel-queue */
 	return;
 
 }
@@ -872,7 +873,7 @@ main(int argc, char *argv[])
 		fprintf(pidf, "%d\n", pid_child);
 		fclose(pidf);
 
-		fprintf(stderr, "[npd %s %s awgn@antifork.org]\n", VERSION, ID);
+		fprintf(stderr, "\n--(%s on %s\n--(%s %s\n\n", VERSION, CPU_MFR_OPSYS, ID, MAIL_SUPPORT);
 		fprintf(stderr, "Server            : %s:%d\n", (*ndp.lhost ? ndp.lhost : "INADDR_ANY"), ndp.lport);
 		fprintf(stderr, "Vhost             : %s\n", (*ndp.vhost ? ndp.vhost : getenv("HOSTNAME")));
 		fprintf(stderr, "Target            : %s:%d\n", (*ndp.rhost ? ndp.rhost : "INTERACTIVE"), ndp.rport);

@@ -9,40 +9,37 @@
 
 ========[CHANGES FROM ver 2.6.0
 
+o	Added: iflist command.
+
 o	Minor changes.
 
-o	Re-coded the finite state machine using (*func pointer).
-	The code is faster and more elegant.
+o	The finite state machine has been recoded using (*func pointer).
 
 o       Definitively left DES for md5.
 
-o	Added -s[lc] switch that forces line-per-line or char-per-char stream.
+o	Added: -s[lc] switch that allows to force the stream in line-per-line or char-per-char mode.
 
-o	Added ndp.conf.
+o	Added: ndp.conf.
 
-o 	Added logs feature. 3 levels: 0,1,2 ( 0 means no log).
+o 	Added: logs feature. 3 levels: 0,1,2 ( 0 means no log).
 
 o	Added:
-	master user ircer+ ircer ircer- classes.
+	master user ircer+ ircer ircer- class.
 
-o	Added commands to ndp's shell:
-	w kill msg exit, link. 
+o	Added: basic commands to ndp's shell.
 
 o       Removed send_err() function, and extended send_msg().
         Added: Connection established message.
 
 o	Added a timeout for a connection attempt.
 
-o       Now ndp handles interactive shells even if outgoing connections
-        fail (connection refused).
-
-o	Replaced NOTICE with WALLOPS.
+o	Replaced NOTICE with WALLOPS (irc env).
 
 o	Minor bugs fixed.
  
 ========[CHANGES FROM ver 2.4.9
 
-o	Fixed a possible buffer overflow in real-name irc client.
+o	Fixed: a possible buffer overflow in real-name irc client.
 	Other minor changes.	
 
 
@@ -53,7 +50,7 @@ o	Introduced RCS/cvs to manage version and changes better.
 
 ========[CHANGES FROM ver 2.2.x
 
-o	Fixed a possible buffer overflow found in little_irc_parser(). 
+o	Fixed: a possible buffer overflow found in little_irc_parser(). 
 
 o	Minor bugs fixed. ( irc_controller )
 
@@ -63,4 +60,4 @@ o	Added "Trying host:port..." advice.
 
 o	Line input is POSIX compliant.
 
-o       GNU configure added.	
+o       Added: GNU configure.	
