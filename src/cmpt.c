@@ -20,12 +20,13 @@ Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
 #ifndef HAVE_STRERROR
 /* A strerror() clone, for systems that don't have it.  */
-char *
+char         *
 strerror (int err)
 {
-  /* This loses on a system without `sys_errlist'.  */
-  extern char **sys_errlist;
-  return sys_errlist[err];
+    /* This loses on a system without `sys_errlist'.  */
+    extern char **sys_errlist;
+
+    return sys_errlist[err];
 }
 #endif /* not HAVE_STRERROR */
 
@@ -41,23 +42,24 @@ strerror (int err)
 int
 strcasecmp (const char *s1, const char *s2)
 {
-  register const unsigned char *p1 = (const unsigned char *) s1;
-  register const unsigned char *p2 = (const unsigned char *) s2;
-  unsigned char c1, c2;
+    register const unsigned char *p1 = (const unsigned char *) s1;
+    register const unsigned char *p2 = (const unsigned char *) s2;
+    unsigned char c1,
+                  c2;
 
-  if (p1 == p2)
-    return 0;
+    if (p1 == p2)
+	return 0;
 
-  do
-    {
-      c1 = tolower (*p1++);
-      c2 = tolower (*p2++);
-      if (c1 == '\0')
-	break;
-    }
-  while (c1 == c2);
+    do
+	{
+	    c1 = tolower (*p1++);
+	    c2 = tolower (*p2++);
+	    if (c1 == '\0')
+		break;
+	}
+    while (c1 == c2);
 
-  return c1 - c2;
+    return c1 - c2;
 }
 #endif /* not HAVE_STRCASECMP */
 
@@ -71,23 +73,24 @@ strcasecmp (const char *s1, const char *s2)
 int
 strncasecmp (const char *s1, const char *s2, size_t n)
 {
-  register const unsigned char *p1 = (const unsigned char *) s1;
-  register const unsigned char *p2 = (const unsigned char *) s2;
-  unsigned char c1, c2;
+    register const unsigned char *p1 = (const unsigned char *) s1;
+    register const unsigned char *p2 = (const unsigned char *) s2;
+    unsigned char c1,
+                  c2;
 
-  if (p1 == p2 || n == 0)
-    return 0;
+    if (p1 == p2 || n == 0)
+	return 0;
 
-  do
-    {
-      c1 = tolower (*p1++);
-      c2 = tolower (*p2++);
-      if (c1 == '\0' || c1 != c2)
-	return c1 - c2;
-    }
-  while (--n > 0);
+    do
+	{
+	    c1 = tolower (*p1++);
+	    c2 = tolower (*p2++);
+	    if (c1 == '\0' || c1 != c2)
+		return c1 - c2;
+	}
+    while (--n > 0);
 
-  return c1 - c2;
+    return c1 - c2;
 }
 #endif /* not HAVE_STRNCASECMP */
 
@@ -105,89 +108,92 @@ strncasecmp (const char *s1, const char *s2, size_t n)
  * Stephen R. van den Berg, berg@pool.informatik.rwth-aachen.de	*/
 typedef unsigned chartype;
 
-char *
+char         *
 strstr (phaystack, pneedle)
-     const char *phaystack;
-     const char *pneedle;
+     const char   *phaystack;
+     const char   *pneedle;
 {
-  register const unsigned char *haystack, *needle;
-  register chartype b, c;
+    register const unsigned char *haystack,
+                 *needle;
+    register chartype b,
+                  c;
 
-  haystack = (const unsigned char *) phaystack;
-  needle = (const unsigned char *) pneedle;
+    haystack = (const unsigned char *) phaystack;
+    needle = (const unsigned char *) pneedle;
 
-  b = *needle;
-  if (b != '\0')
-    {
-      haystack--;		/* possible ANSI violation */
-      do
+    b = *needle;
+    if (b != '\0')
 	{
-	  c = *++haystack;
-	  if (c == '\0')
-	    goto ret0;
-	}
-      while (c != b);
-
-      c = *++needle;
-      if (c == '\0')
-	goto foundneedle;
-      ++needle;
-      goto jin;
-
-      for (;;)
-	{
-	  register chartype a;
-	  register const unsigned char *rhaystack, *rneedle;
-
-	  do
-	    {
-	      a = *++haystack;
-	      if (a == '\0')
-		goto ret0;
-	      if (a == b)
-		break;
-	      a = *++haystack;
-	      if (a == '\0')
-		goto ret0;
-	  shloop:}
-	  while (a != b);
-
-	jin:a = *++haystack;
-	  if (a == '\0')
-	    goto ret0;
-
-	  if (a != c)
-	    goto shloop;
-
-	  rhaystack = haystack-- + 1;
-	  rneedle = needle;
-	  a = *rneedle;
-
-	  if (*rhaystack == a)
+	    haystack--;		/* possible ANSI violation */
 	    do
-	      {
-		if (a == '\0')
-		  goto foundneedle;
-		++rhaystack;
-		a = *++needle;
-		if (*rhaystack != a)
-		  break;
-		if (a == '\0')
-		  goto foundneedle;
-		++rhaystack;
-		a = *++needle;
-	      }
-	    while (*rhaystack == a);
+		{
+		    c = *++haystack;
+		    if (c == '\0')
+			goto ret0;
+		}
+	    while (c != b);
 
-	  needle = rneedle;	/* took the register-poor approach */
+	    c = *++needle;
+	    if (c == '\0')
+		goto foundneedle;
+	    ++needle;
+	    goto jin;
 
-	  if (a == '\0')
-	    break;
+	    for (;;)
+		{
+		    register chartype a;
+		    register const unsigned char *rhaystack,
+		                 *rneedle;
+
+		    do
+			{
+			    a = *++haystack;
+			    if (a == '\0')
+				goto ret0;
+			    if (a == b)
+				break;
+			    a = *++haystack;
+			    if (a == '\0')
+				goto ret0;
+		      shloop:}
+		    while (a != b);
+
+		  jin:a = *++haystack;
+		    if (a == '\0')
+			goto ret0;
+
+		    if (a != c)
+			goto shloop;
+
+		    rhaystack = haystack-- + 1;
+		    rneedle = needle;
+		    a = *rneedle;
+
+		    if (*rhaystack == a)
+			do
+			    {
+				if (a == '\0')
+				    goto foundneedle;
+				++rhaystack;
+				a = *++needle;
+				if (*rhaystack != a)
+				    break;
+				if (a == '\0')
+				    goto foundneedle;
+				++rhaystack;
+				a = *++needle;
+			    }
+			while (*rhaystack == a);
+
+		    needle = rneedle;	/* took the register-poor approach */
+
+		    if (a == '\0')
+			break;
+		}
 	}
-    }
-foundneedle:
-  return (char *) haystack;
-ret0:
-  return 0;
+  foundneedle:
+    return (char *) haystack;
+  ret0:
+    return 0;
 }
 #endif /* not HAVE_STRSTR */

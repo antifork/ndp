@@ -23,59 +23,59 @@
 
 #include <ctrl.h>
 
-extern Channel *channel_ptr;
-
 void
 void_cr_lf (ptr, mode)
-   u_char *ptr;
-   int     mode;
+     u_char       *ptr;
+     int           mode;
 {
-  char *ptr_1, *ptr_2;
+    char         *ptr_1,
+                 *ptr_2;
 
-  if (ptr == NULL)
+    if (ptr == NULL)
+	return;
+
+    while (*ptr)
+	{
+
+	    ptr_1 = ptr + 1;
+	    ptr_2 = ptr + 2;
+
+	    if (mode)
+		{
+
+		    if ((*ptr == 0xf2) && (!*ptr_1 || (*ptr_1 == 0x0d)))
+			*ptr = 0x00;
+		}
+
+	    else
+		{
+		    if (((*ptr == 0x0a) || (*ptr == 0x0d)) && (!*ptr_1 || !*ptr_2))
+			{
+			    *ptr = 0x00;
+			    return;
+			}
+		}
+
+	    ptr++;
+
+	}
     return;
-
-  while (*ptr)
-    {
-
-      ptr_1 = ptr + 1;
-      ptr_2 = ptr + 2;
-
-      if (mode)
-	{
-
-	  if ((*ptr == 0xf2) && (!*ptr_1 || (*ptr_1 == 0x0d)))
-	    *ptr = 0x00;
-	}
-
-      else
-	{
-	  if (((*ptr == 0x0a) || (*ptr == 0x0d)) && (!*ptr_1 || !*ptr_2))
-	    {
-	      *ptr = 0x00;
-	      return;
-	    }
-	}
-
-      ptr++;
-
-    }
-  return;
 }
 
 
 char
 getlastchar (buff)
-    u_char *buff;
+     u_char       *buff;
 {
-  if (buff == NULL)
-    return 0;
+    if (buff == NULL)
+	return 0;
 
-  while (*buff != '\0')
-    {
-      if ( *buff == '\n' ) *(buff + 1) = '\0';
-      buff++;
-    }
+    while (*buff != '\0')
+	{
+	    if (*buff == '\n')
+		*(buff + 1) = '\0';
+	    buff++;
+	}
 
-  return (char) *(--buff);
+    return (char) *(--buff);
 }

@@ -21,131 +21,137 @@
  */
 
 #include <parser.h>
-extern char sep;
+extern char   sep;
 
 int
 parse_input (input, host, port)
-   char *input;
-   long *host;
-   unsigned short *port;
+     char         *input;
+     long         *host;
+     unsigned short *port;
 {
-  register char *ptr;
+    register char *ptr;
 
-  *host = 0;
-  *port = 0;
+    *host = 0;
+    *port = 0;
 
-  while ((*(input) == 0x20))
-    input++;
+    while ((*(input) == ' '))
+	input++;
 
-  if (!*input)
-    return -1;
-
-  if (!(ptr = strchr (input, ':')))
-    return -1;
-
-  *(ptr++) = '\0';
-
-  if (strcasecmp (input, "all"))
-    {
-      *host = gethostbyname_lru (input);
-
-      if ( *host == 0 )
+    if (!*input)
 	return -1;
-    }
 
-  if (Isdigit (ptr))
-    *port = (unsigned short) atoi (ptr);
-  else
-    return -1;
+    if (!(ptr = strchr (input, ':')))
+	return -1;
+
+    *(ptr++) = '\0';
+
+    if (strcasecmp (input, "all"))
+	{
+	    *host = gethostbyname_lru (input);
+
+	    if (*host == 0)
+		return -1;
+	}
+
+    if (ISDIGIT (ptr))
+	*port = (unsigned short) atoi (ptr);
+    else
+	return -1;
 
 
-  return 0;
+    return 0;
 }
 
-#define	CR_LF_COOKIES	0x01
+#define	CR_LF_COOKIES	1
 
 int
 parse_irc (buff, argz)
-   char *buff;
-   char **argz;
+     char         *buff;
+     char        **argz;
 {
-  register short int i = 0;
-  register short int j = 0;
+    register short int i = 0;
+    register short int j = 0;
 
-  short int out = 0;
+    short int     out = 0;
 
-  argz[i++] = buff;
+    argz[i++] = buff;
 
-  while (*buff && (i < _MAXARGLINE_ - 1))
-    {
-
-      switch (*buff)
+    while (*buff && (i < MAXARGLINE - 1))
 	{
-	case 0x20:
-	  *(buff++) = 0x00;
-	  while ((*buff == 0x020))
-	    buff++;
-	  argz[i++] = buff;
-	  break;
-	case 0x0a:
-	case 0x0d:
-	  *(buff++) = 0x00;
-	  argz[i++] = &sep;
-	  j |= CR_LF_COOKIES;
-	  break;
-	default:
-	  if (j & CR_LF_COOKIES)
-	    {
-	      argz[i++] = buff;
-	      j &= ~CR_LF_COOKIES;
-	    }
-	  buff++;
-	  break;
+
+	    switch (*buff)
+		{
+		 case ' ':
+		     *(buff++) = 0;
+		     while ((*buff == ' '))
+			 buff++;
+		     argz[i++] = buff;
+
+		     break;
+
+		 case '\n':
+		 case '\r':
+		     *(buff++) = 0;
+		     argz[i++] = &sep;
+		     j |= CR_LF_COOKIES;
+
+		     break;
+
+		 default:
+		     if (j & CR_LF_COOKIES)
+			 {
+			     argz[i++] = buff;
+			     j &= ~CR_LF_COOKIES;
+			 }
+		     buff++;
+		     break;
+
+		}
 
 	}
 
-    }
+    argz[i] = &sep;
 
-  argz[i] = &sep;
+    out = i--;
+    memset (&argz[i], 0, (MAXARGLINE - i) * sizeof (argz[0]));
 
-  out = i--;
-  memset (&argz[i], 0, (_MAXARGLINE_ - i) * sizeof (argz[0]));
-
-  return out;
+    return out;
 
 }
 
 int
 parse_conf (input, argz)
-   char *input;
-   char **argz;
+     char         *input;
+     char        **argz;
 {
-  register short i = 0, cookies = 0, out = 0;
+    register short i = 0,
+                  cookies = 0,
+                  out = 0;
 
-  argz[i++] = input;
+    argz[i++] = input;
 
-  while ((*input) && (i < _MAXARGLINE_))
-    {
-
-      if ((*input == 0x3a) || (*input == 0x20) || (*input == 0x0a))
+    while ((*input) && (i < MAXARGLINE))
 	{
-	  *(input++) = 0x00;
-	  argz[i] = input;
-	  cookies = 0x01;
-	}
-      else
-	{
-	  if (cookies)
-	    {
-	      i++;
-	      cookies = 0x00;
-	    }
-	  input++;
-	}
-    }
 
-  out = i;
-  memset (&argz[i], 0, (_MAXARGLINE_ - i) * sizeof (argz[0]));
+	    if ((*input == ':') || (*input == ' ') || (*input == '\n'))
+		{
+		    *(input++) = 0;
+		    argz[i] = input;
+		    cookies = 1;
+		}
+	    else
+		{
+		    if (cookies)
+			{
+			    i++;
+			    cookies = 0;
+			}
+		    input++;
+		}
+	}
 
-  return out;
+    out = i;
+    memset (&argz[i], 0, (MAXARGLINE - i) * sizeof (argz[0]));
+
+    return out;
 }

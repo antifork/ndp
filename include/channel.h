@@ -20,31 +20,34 @@
  *
  */
 
-#define	CHAN_SIZE_BUFF	1024
-#define CHAN_SIZE_NICK 	12
-#define CHAN_SIZE_USR	80
-#define CHAN_SIZE_PRPT	80 
+#define	CHAN_SBUFF	1024
+#define CHAN_SNICK 	12
+#define CHAN_SUSR	80
+#define CHAN_SPRPT	80 
 
 
 typedef struct _channel_ {
-	int             flag;
-	u_char   	buffer_in [CHAN_SIZE_BUFF];
-	u_char   	buffer_out[CHAN_SIZE_BUFF];
-	u_char   	*buff_tmp;
-	int		buff_tmp_size;
-	int             fd_out;
-	int             fd_in;
-	long            sec;
-	char            trial;
-	int             opts;
-	char            class;
-	u_char          usernick[CHAN_SIZE_NICK];
-	u_char          username[CHAN_SIZE_USR ];
-	u_char		prompt  [CHAN_SIZE_PRPT];
-	struct sockaddr_in output_addr;
-	struct sockaddr_in caller_addr;
-	struct _channel_ *next;
-} Channel;
+	int             	state;
+	u_char   		bufin [CHAN_SBUFF];
+	u_char   		bufout[CHAN_SBUFF];
+
+	u_char   		*tmp;
+	int			tmp_size;
+
+	int             	fd_out;
+	int             	fd_in;
+	long            	sec;
+	char            	trial;
+	int             	opts;
+	char            	class;
+
+	u_char          	nick  [CHAN_SNICK];
+	u_char          	name  [CHAN_SUSR ];
+	u_char			prompt[CHAN_SPRPT];
+	struct sockaddr_in 	o_addr;
+	struct sockaddr_in 	c_addr;
+	struct _channel_ 	*next;
+} chan_t;
 
 typedef struct _ndp_conf_ {
 	struct {
@@ -71,11 +74,11 @@ typedef struct _ndp_conf_ {
 	char		*ivhost;
 	char		*jvhost;
 
-	unsigned long   lhost_4b;
-	unsigned long   vhost_4b;
-	unsigned long   ivhost_4b;
-	unsigned long   jvhost_4b;
-	unsigned long   rhost_4b;
+	unsigned long   nbo_lhost;
+	unsigned long   nbo_vhost;
+	unsigned long   nbo_ivhost;
+	unsigned long   nbo_jvhost;
+	unsigned long   nbo_rhost;
 
 	unsigned short  lport;
 	unsigned short  rport;
@@ -83,4 +86,4 @@ typedef struct _ndp_conf_ {
 	short		log_level;
 	int		opts;
 
-} ndpControl;
+} ctrl_t;

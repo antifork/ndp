@@ -23,47 +23,49 @@
 #include <msger.h>
 #include <util.h>
 
-extern Channel *channel_ptr;
-extern ndpControl ndp;
-
+extern chan_t *p_chan;
+extern ctrl_t  ndp;
 
 int
-send_msg (Channel * ptr, char *pad, ...)
+send_msg (chan_t * ptr, char *pad, ...)
 {
-  Channel *l_ptr;
-  static char *local_buff;
-  char pre_msg[] = "\n:ndp!ndp@antifork.org WALLOPS :", *o_buff;
+    chan_t       *l_ptr;
 
-  va_list ap;
+    static char  *local_buff;
+
+    char          pre_msg[] = "\n:ndp!ndp@antifork.org WALLOPS :";
+    char          *o_buff;
+
+    va_list       ap;
 
 
-  l_ptr = (ptr ? ptr : channel_ptr);
+    l_ptr = (ptr ? ptr : p_chan);
 
-  if (local_buff)
-      free (local_buff);
+    if (local_buff)
+	free (local_buff);
 
-  va_start (ap, pad);
-  vasprintf (&local_buff, pad, ap);
-  va_end (ap);
+    va_start (ap, pad);
+    vasprintf (&local_buff, pad, ap);
+    va_end (ap);
 
-  if (local_buff)
-    {
-
-      if (l_ptr->opts & CH_IRC_)
-	o_buff = strmrg (pre_msg, local_buff);
-      else
-	o_buff = local_buff;
-
-      if (!(l_ptr->opts & CH_JOIN_) || !(l_ptr->opts & CH_COOKIES_))
+    if (local_buff)
 	{
-	  if (l_ptr->opts & CH_COOKIES_)
-	    l_ptr->opts |= CH_JOIN_;
 
-	  return (send (l_ptr->fd_in, o_buff, strlen (o_buff), 0));
+	    if (l_ptr->opts & CH_IRC)
+		o_buff = strmrg (pre_msg, local_buff);
+	    else
+		o_buff = local_buff;
+
+	    if (!(l_ptr->opts & CH_JOIN) || !(l_ptr->opts & CH_COOKIES))
+		{
+		    if (l_ptr->opts & CH_COOKIES)
+			l_ptr->opts |= CH_JOIN;
+
+		    return (send (l_ptr->fd_in, o_buff, strlen (o_buff), 0));
+		}
+
+
 	}
 
-
-    }
-
-  return 0;			/* That's unreachable */
+    return 0;			/* That's unreachable */
 }

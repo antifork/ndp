@@ -42,11 +42,11 @@
 /* LRU must be a power of 2, and cannot be longer than 65536 elements. 
    Better performances can be obtained with a size over 32 ( 64 or 128).
 */
-#define LRU  		64 
+#define LRU  		64
 #endif
 
 #define MAXALIAS        16
-#define EXPDAY          8       
+#define EXPDAY          8
 
 /* test */
 
@@ -70,73 +70,75 @@ LRU >> 11 |\
 LRU >> 12 |\
 LRU >> 13 |\
 LRU >> 14 |\
-LRU >> 15 ) 
+LRU >> 15 )
 
 #define SFREE(x) \
 \
 ({\
 if(x)\
 free(x); \
-x=NULL;}) 
+x=NULL;})
 
 /*** table ***/
 
 typedef struct _lru_
 {
 
-  unsigned int yday; /* day of the year */
-  unsigned long addr[MAXALIAS];
+    unsigned int  yday;		/* day of the year */
+    unsigned long addr[MAXALIAS];
 
-  int  id;
-  int  idmax;
+    int           id;
+    int           idmax;
 
-  char *host;
+    char         *host;
 
 }
 lru;
 
-static lru hostbyname[LRU];
-static lru hostbyaddr[LRU];
+static lru    hostbyname[LRU];
+static lru    hostbyaddr[LRU];
 
 /*** private fuctions ***/
 
-static void
+void
 fatalerr (char *pattern, ...)
 {
-  va_list ap;
+    va_list       ap;
 
-  va_start (ap, pattern);
-  vfprintf (stderr, pattern, ap);
-  fprintf (stderr, "; exit forced.\n");
-  va_end (ap);
+    va_start (ap, pattern);
+    vfprintf (stderr, pattern, ap);
+    fprintf (stderr, "; exit forced.\n");
+    va_end (ap);
 
-  exit (-1);
+    exit (-1);
 
 }
 
 static
 #ifdef __GNUC__
-  __inline
+              __inline
 #else
 #endif
-  unsigned long
+    unsigned long
 hash (const char *key, int m)
 {
-  int hash, i;
+    int           hash,
+                  i;
 
-  if (key == NULL ) return 0;
+    if (key == NULL)
+	return 0;
 
-  for (hash = 0, i = 0; i<m ; ++i)
-    {
-      hash += key[i];
-      hash += (hash << 10);
-      hash ^= (hash >> 6);
-    }
-  hash += (hash << 3);
-  hash ^= (hash >> 11);
-  hash += (hash << 15);
+    for (hash = 0, i = 0; i < m; ++i)
+	{
+	    hash += key[i];
+	    hash += (hash << 10);
+	    hash ^= (hash >> 6);
+	}
+    hash += (hash << 3);
+    hash ^= (hash >> 11);
+    hash += (hash << 15);
 
-  return (hash & HASHMASK);
+    return (hash & HASHMASK);
 }
 
 /* gethostbyname utils */
@@ -144,142 +146,143 @@ hash (const char *key, int m)
 static unsigned long
 search_hostbyname (const char *host)
 {
-  register int i = 0;
-  register long ret = -1;
-  time_t now;
-  struct tm *tm_now;
+    register int  i = 0;
+    register long ret = -1;
+    time_t        now;
+    struct tm    *tm_now;
 
-  /* i = hash (..) */
+    /* i = hash (..) */
 
-  i = hash(host, strlen(host));
+    i = hash (host, strlen (host));
 
-  /* null ? */
+    /* null ? */
 
-  if ( hostbyname[i].host == NULL )
-        return ret;
+    if (hostbyname[i].host == NULL)
+	return ret;
 
-  /* reset */
+    /* reset */
 
-  if ( hostbyname[i].id == hostbyname[i].idmax )
-        {
-        hostbyname[i].id = 0;
-        }
+    if (hostbyname[i].id == hostbyname[i].idmax)
+	{
+	    hostbyname[i].id = 0;
+	}
 
-  if ( !strcmp(host,hostbyname[i].host ))
-        {
-        ret= hostbyname[i].addr[hostbyname[i].id];
-        hostbyname[i].id++;
-        }
+    if (!strcmp (host, hostbyname[i].host))
+	{
+	    ret = hostbyname[i].addr[hostbyname[i].id];
+	    hostbyname[i].id++;
+	}
 
-  /* expired ? */
+    /* expired ? */
 
-  time(&now);
-  tm_now = gmtime (&now);
+    time (&now);
+    tm_now = gmtime (&now);
 
-  if ( tm_now->tm_yday - hostbyname[i].yday > EXPDAY )
-        {
-        /* expired */
-        return -1;
-        }
+    if (tm_now->tm_yday - hostbyname[i].yday > EXPDAY)
+	{
+	    /* expired */
+	    return -1;
+	}
 
-  /* ok */
+    /* ok */
 
-  return ret;
+    return ret;
 
 }
 
 static void
-insert_hostbyname (const char *h, char ** addr_list, int h_length)
+insert_hostbyname (const char *h, char **addr_list, int h_length)
 {
-  register int i,j;
-  time_t now;
-  struct tm * tm_now;
+    register int  i,
+                  j;
+    time_t        now;
+    struct tm    *tm_now;
 
-  i = hash(h, strlen(h));
+    i = hash (h, strlen (h));
 
-  SFREE(hostbyname[i].host);
+    SFREE (hostbyname[i].host);
+    hostbyname[i].host = strdup (h);
 
-  hostbyname[i].host = strdup (h);
+    j = 0;
+    hostbyname[i].idmax = 0;
 
-  j=0;
-  hostbyname[i].idmax=0;
+    while (addr_list[j] && j < MAXALIAS)
+	{
+	    bcopy (addr_list[j], (char *) &hostbyname[i].addr[j], h_length);
+	    j++;
+	    hostbyname[i].idmax++;
+	}
 
-  while ( addr_list[j] && j < MAXALIAS)
-  {
-     bcopy (addr_list[j], (char *) &hostbyname[i].addr[j], h_length);
-     j++;
-     hostbyname[i].idmax++;
-  }
+    hostbyname[i].id = 1;
 
-  hostbyname[i].id=1;
+    time (&now);
+    tm_now = gmtime (&now);
 
-  time(&now);
-  tm_now = gmtime (&now);
+    hostbyname[i].yday = tm_now->tm_yday;
 
-  hostbyname[i].yday = tm_now->tm_yday;
-
-  return;
+    return;
 }
 
 /* gethostbyaddr utils */
 
-static char *
+static char  *
 search_hostbyaddr (const unsigned long addr)
 {
-  register int i;
-  static char *ret = NULL;
-  time_t now;
-  struct tm *tm_now;
+    register int  i;
+    static char  *ret = NULL;
+    time_t        now;
+    struct tm    *tm_now;
 
-  SFREE (ret);
+    SFREE (ret);
 
-  if (!addr) return ret;
+    if (!addr)
+	return ret;
 
-  i= hash ((char *)&addr,sizeof(long int));
+    i = hash ((char *) &addr, sizeof (long int));
 
-  if (addr == hostbyaddr[i].addr[0])
-      {
-      ret = strdup (hostbyaddr[i].host);
-      }
-  /* expired ? */
+    if (addr == hostbyaddr[i].addr[0])
+	{
+	    ret = strdup (hostbyaddr[i].host);
+	}
+    /* expired ? */
 
-  time(&now);
-  tm_now = gmtime (&now);
+    time (&now);
+    tm_now = gmtime (&now);
 
-  if ( tm_now->tm_yday - hostbyaddr[i].yday > EXPDAY )
-        {
-        /* expired */
-        return (char *)NULL;
-        }
+    if (tm_now->tm_yday - hostbyaddr[i].yday > EXPDAY)
+	{
+	    /* expired */
+	    return (char *) NULL;
+	}
 
-  /* ok */
+    /* ok */
 
-  return ret;
+    return ret;
 }
 
 static void
 insert_hostbyaddr (const char *h, const unsigned long addr)
 {
-  register int i;
-  time_t now;
-  struct tm *tm_now;
+    register int  i;
+    time_t        now;
+    struct tm    *tm_now;
 
-  i = hash ((char *)&addr,4);
+    i = hash ((char *) &addr, 4);
 
-  SFREE (hostbyaddr[i].host);
+    SFREE (hostbyaddr[i].host);
 
-  hostbyaddr[i].host = strdup (h);
-  hostbyaddr[i].addr[0] = addr;
+    hostbyaddr[i].host = strdup (h);
+    hostbyaddr[i].addr[0] = addr;
 
-  hostbyaddr[i].id   =0;
-  hostbyaddr[i].idmax=0;
+    hostbyaddr[i].id = 0;
+    hostbyaddr[i].idmax = 0;
 
-  time(&now);
-  tm_now = gmtime (&now);
+    time (&now);
+    tm_now = gmtime (&now);
 
-  hostbyaddr[i].yday = tm_now->tm_yday;
+    hostbyaddr[i].yday = tm_now->tm_yday;
 
-  return;
+    return;
 }
 
 /*** public function ***/
@@ -287,150 +290,153 @@ insert_hostbyaddr (const char *h, const unsigned long addr)
 unsigned long
 gethostbyname_lru (const char *host)
 {
-  struct in_addr addr;
-  struct hostent *host_ent;
+    struct in_addr addr;
+    struct hostent *host_ent;
 
-  long ret;
+    long          ret;
 
-  if (host)
-    {
+    if (host)
+	{
 
-      if ((ret = search_hostbyname (host)) != -1)
-        /* hit */
-        {
-          return ret;
-        }
+	    if ((ret = search_hostbyname (host)) != -1)
+		/* hit */
+		{
+		    return ret;
+		}
 
-      /* fail */
+	    /* fail */
 
-      if ((addr.s_addr = inet_addr (host)) == -1)
-        {
-          if (!(host_ent = gethostbyname (host)))
-            fatalerr ("gethostbyname_lru err:%s", strerror (errno));
+	    if ((addr.s_addr = inet_addr (host)) == -1)
+		{
+		    if (!(host_ent = gethostbyname (host)))
+			fatalerr ("gethostbyname_lru err:%s", strerror (errno));
 
-          bcopy (host_ent->h_addr, (char *) &addr.s_addr, host_ent->h_length);
-          insert_hostbyname (host, host_ent->h_addr_list,host_ent->h_length );
+		    bcopy (host_ent->h_addr, (char *) &addr.s_addr, host_ent->h_length);
+		    insert_hostbyname (host, host_ent->h_addr_list, host_ent->h_length);
 
-        }
+		}
 
-      return addr.s_addr;
+	    return addr.s_addr;
 
-    }
-  else
-    fatalerr ("gethostbyname_lru err: %s pointer", (char *) NULL);
+	}
+    else
+	fatalerr ("gethostbyname_lru err: %s pointer", (char *) NULL);
 
-  return 0; /* unreachable */
+    return 0;			/* unreachable */
 
 }
 
 
-char *
+char         *
 gethostbyaddr_lru (unsigned long addr)
 {
-  static char *ret = NULL;
-  struct hostent *hostname;
+    static char  *ret = NULL;
+    struct hostent *hostname;
 
 
-  SFREE (ret);
+    SFREE (ret);
 
-  if (addr == 0) return "0.0.0.0";
+    if (addr == 0)
+	return "0.0.0.0";
 
 
 /*  if (!(opt & OPT_NUM))
     {
 */
 
-      if ((ret = search_hostbyaddr (addr)) != NULL)
-        /* hit */
-        {
-          ret = strdup (ret);
-          return ret;
-        }
-      /* fail */
-      if ((hostname = gethostbyaddr ((char *) &addr, 0x04, AF_INET)) != NULL)
-        ret = strdup (hostname->h_name);
-      else
-        ret = strdup (inet_ntoa (*(struct in_addr *) &addr));
+    if ((ret = search_hostbyaddr (addr)) != NULL)
+	/* hit */
+	{
+	    ret = strdup (ret);
+	    return ret;
+	}
+    /* fail */
+    if ((hostname = gethostbyaddr ((char *) &addr, 0x04, AF_INET)) != NULL)
+	ret = strdup (hostname->h_name);
+    else
+	ret = strdup (inet_ntoa (*(struct in_addr *) &addr));
 
 /*   }
    else
     ret = strdup (inet_ntoa (*(struct in_addr *) &addr));
 */
 
-  if (ret && addr)
-    insert_hostbyaddr (ret, addr);
-  else
-    fatalerr ("gethostbyaddr_lru err:%s", strerror (errno));
+    if (ret && addr)
+	insert_hostbyaddr (ret, addr);
+    else
+	fatalerr ("gethostbyaddr_lru err:%s", strerror (errno));
 
-  return ret;
+    return ret;
 }
 
-char *
+char         *
 multi_inet_nbotoa (unsigned long address)
 {
 
 #define N_STATIC_BUFF   4
-  static unsigned int bit_flag_;
-  static char *buff[N_STATIC_BUFF];
+    static unsigned int bit_flag_;
+    static char  *buff[N_STATIC_BUFF];
 
-  bit_flag_++;
+    bit_flag_++;
 
-  buff[bit_flag_ % N_STATIC_BUFF] =
-    (char *) realloc (buff[bit_flag_ % N_STATIC_BUFF], 16);
-  memset (buff[bit_flag_ % N_STATIC_BUFF], 0, 16);
-  memcpy (buff[bit_flag_ % N_STATIC_BUFF],
-          (char *) inet_ntoa (*(struct in_addr *) &address), 15);
+    buff[bit_flag_ % N_STATIC_BUFF] = (char *) realloc (buff[bit_flag_ % N_STATIC_BUFF], 16);
 
-  return (char *) buff[bit_flag_ % N_STATIC_BUFF];
+    memset (buff[bit_flag_ % N_STATIC_BUFF], 0, 16);
+    memcpy (buff[bit_flag_ % N_STATIC_BUFF], (char *) inet_ntoa (*(struct in_addr *) &address), 15);
+
+    return (char *) buff[bit_flag_ % N_STATIC_BUFF];
 
 }
 
-char *
+char         *
 strmrg (char *buff_1, char *buff_2)
 {
-  register int s_1 = 0, s_2 = 0;
-  register char *_ptr1 = buff_1, *_ptr2 = buff_2, *_ptr = NULL;
+    register int  s_1 = 0,
+                  s_2 = 0;
+    register char *_ptr1 = buff_1,
+                 *_ptr2 = buff_2,
+                 *_ptr = NULL;
 
-  static char *_pbuf;
+    static char  *_pbuf;
 
-  if (_ptr1)
-    {
+    if (_ptr1)
+	{
 
-      s_1 = strlen (_ptr1);
+	    s_1 = strlen (_ptr1);
 
-      if (_ptr1 == _pbuf)
-        {
-          _ptr1 = alloca (s_1 + 1);
-          *(_ptr1 + s_1) = '\0';
-          memcpy (_ptr1, buff_1, s_1);
-        }
-    }
+	    if (_ptr1 == _pbuf)
+		{
+		    _ptr1 = alloca (s_1 + 1);
+		    *(_ptr1 + s_1) = '\0';
+		    memcpy (_ptr1, buff_1, s_1);
+		}
+	}
 
-  if (_ptr2)
-    {
+    if (_ptr2)
+	{
 
-      s_2 = strlen (_ptr2);
+	    s_2 = strlen (_ptr2);
 
-      if (_ptr2 == _pbuf)
-        {
-          _ptr2 = alloca (s_2 + 1);
-          *(_ptr2 + s_2) = '\0';
-          memcpy (_ptr2, buff_2, s_2);
-        }
-    }
+	    if (_ptr2 == _pbuf)
+		{
+		    _ptr2 = alloca (s_2 + 1);
+		    *(_ptr2 + s_2) = '\0';
+		    memcpy (_ptr2, buff_2, s_2);
+		}
+	}
 
 
-  _ptr = _pbuf = realloc (_pbuf, s_1 + s_2 + 1);
+    _ptr = _pbuf = realloc (_pbuf, s_1 + s_2 + 1);
 
-  if (_ptr1)
-    {
-      while ((*_ptr++ = *_ptr1++));
-      _ptr--;
-    }
+    if (_ptr1)
+	{
+	    while ((*_ptr++ = *_ptr1++));
+	    _ptr--;
+	}
 
-  if (_ptr2)
-    while ((*_ptr++ = *_ptr2++));
+    if (_ptr2)
+	while ((*_ptr++ = *_ptr2++));
 
-  return (char *) _pbuf;
+    return (char *) _pbuf;
 
 }

@@ -25,21 +25,22 @@
 #include <std.h>
 #include <channel.h>
 
-extern Channel *channel_ptr;
+extern chan_t *p_chan;
+
 extern struct timeval mytime;
 
 /* prototypes */
 
-int diff_time 		__P((long, long));
-void rehash_time 	__P((void));
+int diff_time __P ((long, long));
+void rehash_time __P ((void));
 
 
 int
 diff_time (now, old)
-   long now;
-   long old;
+     long          now;
+     long          old;
 {
-  return ((now - old) > 0 ? (now - old) : (0));
+    return ((now - old) > 0 ? (now - old) : (0));
 }
 
 void
@@ -48,13 +49,13 @@ rehash_time ()
 /* rehash mytime: sec/usec or sec/0 due to the presence of GETTIMEOFDAY or less */
 
 #ifdef HAVE_GETTIMEOFDAY
-  gettimeofday (&mytime, NULL);
+    gettimeofday (&mytime, NULL);
 #else
-  mytime.tv_sec = time (NULL);
-  mytime.tv_usec = 0;
+    mytime.tv_sec = time (NULL);
+    mytime.tv_usec = 0;
 #endif
 
-  channel_ptr->sec = mytime.tv_sec;
-  return;
+    p_chan->sec = mytime.tv_sec;
 
+    return;
 }

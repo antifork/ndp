@@ -23,53 +23,52 @@
 #include <irc.h>
 #include <util.h>
 
-extern Channel *channel_ptr;
+extern chan_t *p_chan;
 
-static char *irc_commands[] = { "NICK", "USER", "ISON", "PING", "QUIT", "JOIN", "NOTICE", NULL };
-static char bufftmp[CHAN_SIZE_BUFF];
+static char  *irc_commands[] = { "NICK", "USER", "ISON", "PING", "QUIT", "JOIN", "NOTICE", NULL };
+static char   bufftmp[CHAN_SBUFF];
 
-char sep = 0xff;
+char          sep = 0xff;
 
 int
 match_irc (buff)
-   char *buff;
+     char         *buff;
 {
-  register int i = 0;
+    register int  i = 0;
 
-  while (irc_commands[i] && (i < _MAXARGLINE_))
-    {
-      if (!strncmp (buff, irc_commands[i], strlen (irc_commands[i])))
-	break;
-      i++;
-    }
+    while (irc_commands[i] && (i < MAXARGLINE))
+	{
+	    if (!strncmp (buff, irc_commands[i], strlen (irc_commands[i])))
+		break;
+	    i++;
+	}
 
-  return ((i == 7) ? 0 : (i + 1));
+    return ((i == 7) ? 0 : (i + 1));
 }
 
 
 int
 irc_postlogin ()
 {
-  char *ptr = NULL;
+    char         *ptr = NULL;
 
-  ptr = strmrg ((char *) NULL, "NICK ");
+    ptr = strmrg ((char *) NULL, "NICK ");
 
-  if (*channel_ptr->usernick != '\0' )
-    ptr = strmrg (ptr, channel_ptr->usernick);
-  else
-    ptr = strmrg (ptr, "ndp-");
+    if (*p_chan->nick != '\0')
+	ptr = strmrg (ptr, p_chan->nick);
+    else
+	ptr = strmrg (ptr, "ndp-");
 
-  ptr = strmrg (ptr, "\nUSER ");
+    ptr = strmrg (ptr, "\nUSER ");
 
-  if (*channel_ptr->username != '\0')
-    ptr = strmrg (ptr, channel_ptr->username);
-  else
-    ptr =
-      strmrg (ptr, "ndp ndp ndp :fake client using ndp. http://awgn.antifork.org");
+    if (*p_chan->name != '\0')
+	ptr = strmrg (ptr, p_chan->name);
+    else
+	ptr = strmrg (ptr, "ndp ndp ndp :fake client using ndp. http://awgn.antifork.org");
 
-  ptr = strmrg (ptr, "\n");
+    ptr = strmrg (ptr, "\n");
 
-  return (send (channel_ptr->fd_out, ptr, strlen (ptr), 0));
+    return (send (p_chan->fd_out, ptr, strlen (ptr), 0));
 
 }
 
@@ -79,91 +78,89 @@ irc_postlogin ()
 
 void
 irc_controller (ptr)
-   char *ptr;
+     char         *ptr;
 {
 
-  char *argirc[_MAXARGLINE_];
+    char         *argirc[MAXARGLINE];
 
-  register int i = 0, irc_command = 0;
+    register int  i = 0,
+                  irc_command = 0;
 
-  memset (&argirc, 0, sizeof (argirc));
-  memset (bufftmp, 0, CHAN_SIZE_BUFF);
+    memset (&argirc, 0, sizeof (argirc));
+    memset (bufftmp, 0, CHAN_SBUFF);
 
-  strncpy (bufftmp, ptr, CHAN_SIZE_BUFF - 1);
+    strncpy (bufftmp, ptr, CHAN_SBUFF - 1);
 
-  (void) parse_irc (bufftmp, argirc);
+    (void) parse_irc (bufftmp, argirc);
 
-  channel_ptr->opts &= ~CH_COOKIES_;
+    p_chan->opts &= ~CH_COOKIES;
 
-  while (argirc[i] && (i < _MAXARGLINE_))
-    {
-      if ((irc_command = match_irc (argirc[i])))
+    while (argirc[i] && (i < MAXARGLINE))
 	{
-
-	  channel_ptr->opts |= CH_IRC_;
-	  channel_ptr->opts |= CH_COOKIES_;
-
-	  switch (irc_command)
-	    {
-
-	    case IRC_COMM_NICK:
-	      memset (channel_ptr->usernick, 0, CHAN_SIZE_NICK);
-
-	      if (argirc[i + 1] != NULL)
-		strncpy (channel_ptr->usernick, argirc[i + 1],
-			 CHAN_SIZE_NICK - 1);
-	      break;
-	    case IRC_COMM_USER:
-	      memset (channel_ptr->username, 0, CHAN_SIZE_USR);
-
-	      while ((argirc[i + 1] != &sep) && (argirc[i + 1] != NULL))
+	    if ((irc_command = match_irc (argirc[i])))
 		{
 
-		  if ((CHAN_SIZE_USR - strlen (channel_ptr->username) - 2) >
-		      0)
-		    {
-		      strncat (channel_ptr->username, argirc[i + 1],
-			       CHAN_SIZE_USR -
-			       strlen (channel_ptr->username) - 2);
-		      strcat (channel_ptr->username, " ");
-		    }
+		    p_chan->opts |= CH_IRC;
+		    p_chan->opts |= CH_COOKIES;
 
-		  i++;
+		    switch (irc_command)
+			{
 
+			 case IRC_COMM_NICK:
+			     memset (p_chan->nick, 0, CHAN_SNICK);
+
+			     if (argirc[i + 1] != NULL)
+				 strncpy (p_chan->nick, argirc[i + 1], CHAN_SNICK - 1);
+			     break;
+
+			 case IRC_COMM_USER:
+			     memset (p_chan->name, 0, CHAN_SUSR);
+
+			     while ((argirc[i + 1] != &sep) && (argirc[i + 1] != NULL))
+				 {
+
+				     if ((CHAN_SUSR - strlen (p_chan->name) - 2) > 0)
+					 {
+					     strncat (p_chan->name, argirc[i + 1], CHAN_SUSR - strlen (p_chan->name) - 2);
+					     strcat (p_chan->name, " ");
+					 }
+
+				     i++;
+
+				 }
+			     break;
+			}
 		}
-	      break;
-	    }
+	    i++;
 	}
-      i++;
-    }
 
 
-  if (channel_ptr->opts & CH_COOKIES_)
-    channel_ptr->trial--;
+    if (p_chan->opts & CH_COOKIES)
+	p_chan->trial--;
 
-  return;
+    return;
 }
 
 
 
 void
 stream_guesser (ptr)
-   char *ptr;
+     char         *ptr;
 {
 
-  register int i = 0;
+    register int  i = 0;
 
-  while (irc_commands[i])
-    {
-      if (strstr (ptr, irc_commands[i++]))
-	channel_ptr->opts |= CH_LINE_;
-    }
+    while (irc_commands[i])
+	{
+	    if (strstr (ptr, irc_commands[i++]))
+		p_chan->opts |= CH_LINE;
+	}
 
-  if (!(channel_ptr->opts & CH_LINE_))
-    channel_ptr->opts |= CH_CHAR_;
+    if (!(p_chan->opts & CH_LINE))
+	p_chan->opts |= CH_CHAR;
 
-  channel_ptr->opts &= ~CH_UNKNOWN_;
+    p_chan->opts &= ~CH_UNKNOWN;
 
-  return;
+    return;
 
 }

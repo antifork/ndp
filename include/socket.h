@@ -32,9 +32,9 @@
 
 void    set_nonblock    	(int );
 void    set_block       	(int );
-void    halfshutdown_   	(Channel *);
-void    shutdown_       	(Channel *);
-int     read_from_channel       (int , char *);
-int     write_to_channel        (int , char *, int);
-void    reset_chan         	(Channel * );
-int     send_msg 		(Channel *, char *, ...);
+void    halfshutdown_   	(chan_t *);
+void    shutdown_       	(chan_t *);
+int     read_chan       	(int , char *);
+int     write_chan		(int , char *, int);
+void    reset_chan         	(chan_t * );
+int     send_msg 		(chan_t *, char *, ...);

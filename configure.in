@@ -61,6 +61,6 @@ AC_TYPE_SIGNAL
 AC_CHECK_LIB(socket, select, LIBS="$LIBS -lsocket",)
 AC_CHECK_LIB(inet,   select, LIBS="$LIBS -linet",)
 AC_CHECK_LIB(cposix, select, LIBS="$LIBS -lcposix",)
-AC_CHECK_LIB(nsl,    select, LIBS="$LIBS -lnsl",)
+#AC_CHECK_LIB(nsl,    select, LIBS="$LIBS -lnsl",)
 
 AC_OUTPUT(src/Makefile)

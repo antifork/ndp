@@ -24,177 +24,177 @@
 #include <socket.h>
 #include <util.h>
 
-extern Channel *channel_ptr;
-extern ndpControl ndp;
+extern chan_t *p_chan;
+extern ctrl_t ndp;
 
-extern int Nchannel, fd_in;
+extern int    Nchannel,
+              fd_in;
 
 void
 set_nonblock (sock)
-   int sock;
+     int           sock;
 {
-  register int val = 0;
+    register int  val = 0;
 
-  val = fcntl (sock, F_GETFL, val);
-  val |= O_NONBLOCK;
-  fcntl (sock, F_SETFL, val);
-  return;
+    val = fcntl (sock, F_GETFL, val);
+    val |= O_NONBLOCK;
+    fcntl (sock, F_SETFL, val);
+
+    return;
 }
 
 void
 set_block (sock)
-   int sock;
+     int           sock;
 {
-  register int val = 0;
+    register int  val = 0;
 
-  val = fcntl (sock, F_GETFL, val);
-  val &= ~O_NONBLOCK;
-  fcntl (sock, F_SETFL, val);
-  return;
+    val = fcntl (sock, F_GETFL, val);
+    val &= ~O_NONBLOCK;
+    fcntl (sock, F_SETFL, val);
+
+    return;
 }
 
 
 void
 create_dialer_sock (ptr, vhost, rhost, rport)
-   Channel * ptr;
-   long vhost;
-   long rhost;
-   int  rport;
+     chan_t       *ptr;
+     long          vhost;
+     long          rhost;
+     int           rport;
 {
-  /* SO_LINGER the system will process the close in a manner
-     * that allows to continue as quickly as possible */
+    /* SO_LINGER the system will process the close in a manner
+       * that allows to continue as quickly as possible */
 
-  struct linger linger_ = { 0, 0 };
+    struct linger linger_ = { 0, 0 };
 
-  if ((ptr->fd_out = socket (AF_INET, SOCK_STREAM, 0)) == -1)
-    {
-      if (ndp.log_level)
-	syslog (LOG_ERR, "Cannot create a socket:%s", strerror (errno));
-      shutdown_ (NULL);
-      return;
-    }
+    if ((ptr->fd_out = socket (AF_INET, SOCK_STREAM, 0)) == -1)
+	{
+	    if (ndp.log_level)
+		syslog (LOG_ERR, "Cannot create a socket:%s", strerror (errno));
 
-  setsockopt (ptr->fd_out,
-	      SOL_SOCKET, SO_LINGER, (char *) &linger_, sizeof (linger_));
+	    shutdown_ (NULL);
+	    return;
+	}
 
-  /* setting up vhost */
+    setsockopt (ptr->fd_out, SOL_SOCKET, SO_LINGER, (char *) &linger_, sizeof (linger_));
 
-  memset (&(ptr->output_addr), 0, sizeof (struct sockaddr_in));
+    /* setting up vhost */
 
-  ptr->output_addr.sin_family = AF_INET;
-  ptr->output_addr.sin_addr.s_addr = vhost;
-  ptr->output_addr.sin_port = htons ((u_short) 0);
+    memset (&(ptr->o_addr), 0, sizeof (struct sockaddr_in));
 
-  if (bind
-      (ptr->fd_out, (struct sockaddr *) &(ptr->output_addr),
-       sizeof (ptr->output_addr)) == -1)
-    send_msg (NULL, "bind: %s %s\n",
-	      multi_inet_nbotoa (ptr->output_addr.sin_addr.s_addr),
-	      strerror (errno));
+    ptr->o_addr.sin_family      = AF_INET;
+    ptr->o_addr.sin_addr.s_addr = vhost;
+    ptr->o_addr.sin_port        = htons ((u_short) 0);
 
-  /* setting up host to connect */
+    if (bind (ptr->fd_out, (struct sockaddr *) &(ptr->o_addr), sizeof (ptr->o_addr)) == -1)
+	send_msg (NULL, "bind: %s %s\n", multi_inet_nbotoa (ptr->o_addr.sin_addr.s_addr), strerror (errno));
 
-  ptr->output_addr.sin_family = AF_INET;
-  ptr->output_addr.sin_port = htons ((u_short) rport);
-  ptr->output_addr.sin_addr.s_addr = rhost;
+    /* setting up host to connect */
 
-  set_nonblock (ptr->fd_out);
+    ptr->o_addr.sin_family      = AF_INET;
+    ptr->o_addr.sin_addr.s_addr = rhost;
+    ptr->o_addr.sin_port        = htons ((u_short) rport);
 
-  ptr->flag = _CONNECTING_;
-  return;
+    set_nonblock (ptr->fd_out);
+
+    ptr->state = S_CONN;
+
+    return;
 }
 
 void
 shutdown_ (parg)
-   Channel * parg;
+     chan_t       *parg;
 {
 
-  register Channel *ptr;
+    register chan_t *ptr;
 
-  ptr = ((parg == NULL) ? (channel_ptr) : (parg));
+    ptr = ((parg == NULL) ? (p_chan) : (parg));
 
-  if (ptr->fd_out > 2)
-    {
-      shutdown (ptr->fd_out, 2);
-      close (ptr->fd_out);
-    }
+    if (ptr->fd_out > 2)
+	{
+	    shutdown (ptr->fd_out, 2);
+	    close (ptr->fd_out);
+	}
 
-  if (ptr->fd_in > 2)
-    {
-      shutdown (ptr->fd_in, 2);
-      close (ptr->fd_in);
-    }
+    if (ptr->fd_in > 2)
+	{
+	    shutdown (ptr->fd_in, 2);
+	    close (ptr->fd_in);
+	}
 
-  if (ptr->buff_tmp)
-    free (ptr->buff_tmp);
+    if (ptr->tmp)
+	free (ptr->tmp);
 
-  reset_chan (ptr);
+    reset_chan (ptr);
 
-  return;
+    return;
 }
+
 
 void
 halfshutdown_ (parg)
-   Channel * parg;
+     chan_t       *parg;
 {
-  struct linger linger_ = { 0, 0 };
-  register Channel *ptr;
+    struct linger linger_ = { 0, 0 };
+    register chan_t *ptr;
 
-  ptr = ((parg == NULL) ? (channel_ptr) : (parg));
+    ptr = ((parg == NULL) ? (p_chan) : (parg));
 
-  if (ptr->fd_out > 2)
-    {
-
-      shutdown (ptr->fd_out, 2);
-      close (ptr->fd_out);
-
-      if ((ptr->fd_out = socket (AF_INET, SOCK_STREAM, 0)) == -1)
+    if (ptr->fd_out > 2)
 	{
-	  if (ndp.log_level)
-	    syslog (LOG_ERR, "Cannot create a socket:%s", strerror (errno));
-	  shutdown_ (NULL);
-	  return;
+
+	    shutdown (ptr->fd_out, 2);
+	    close (ptr->fd_out);
+
+	    if ((ptr->fd_out = socket (AF_INET, SOCK_STREAM, 0)) == -1)
+		{
+		    if (ndp.log_level)
+			syslog (LOG_ERR, "Cannot create a socket:%s", strerror (errno));
+		    shutdown_ (NULL);
+		    return;
+		}
+
+	    setsockopt (ptr->fd_out, SOL_SOCKET, SO_LINGER, (char *) &linger_, sizeof (linger_));
+
 	}
 
-      setsockopt (ptr->fd_out, SOL_SOCKET, SO_LINGER, (char *) &linger_,
-		  sizeof (linger_));
-
-    }
-
-  return;
+    return;
 }
 
 
 int
-read_from_channel (fd, buff)
-   int fd;
-   char *buff;
+read_chan (fd, buff)
+     int           fd;
+     char         *buff;
 {
-  register int nbyt = 0;
+    register int  nbyt = 0;
 
-  if ((nbyt = recv (fd, buff, CHAN_SIZE_BUFF - 1, 0)) <= 0)
-    {
-      shutdown_ (NULL);
-      return -1;
-    }
+    if ((nbyt = recv (fd, buff, CHAN_SBUFF - 1, 0)) <= 0)
+	{
+	    shutdown_ (NULL);
+	    return -1;
+	}
 
-  return nbyt;
+    return nbyt;
 }
 
 
 int
-write_to_channel (fd, buff, bt)
-   int fd;
-   char *buff;
-   int bt;
+write_chan (fd, buff, bt)
+     int           fd;
+     char         *buff;
+     int           bt;
 {
-  register int wbyt = 0;
+    register int  wbyt = 0;
 
-  if ((wbyt = send (fd, buff, bt, 0)) <= 0)
-    {
-      shutdown_ (NULL);
-      return -1;
-    }
+    if ((wbyt = send (fd, buff, bt, 0)) <= 0)
+	{
+	    shutdown_ (NULL);
+	    return -1;
+	}
 
-  return wbyt;
+    return wbyt;
 }

@@ -21,7 +21,7 @@
  */
 
 
-#define Isdigit(x)              ( (atoi(x)) > 0 ? (1) : (0) )
+#define ISDIGIT(x)              ( (atoi(x)) > 0 ? (1) : (0) )
 
 /*
 Standard includes

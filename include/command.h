@@ -25,12 +25,11 @@
 #include "channel.h"
 #include "ndp.h"
 
-typedef struct _item_
+typedef struct 
 {
-      char        *c_name;
-      int        (*c_func) (int, char **, char *);
-      int	  perm;
-      char	  *descr;
+      int          (*c_handler) (int, char **, char *);
+      int	     perm;
+      char	    *descr;
 }
 item;
 
@@ -38,22 +37,22 @@ item;
 */
 void            welcome         (void);
 
-int             c_help          (int ,char **, char*);
-int             c_who           (int ,char **, char*);
-int             c_link          (int ,char **, char*);
-int             c_msg           (int ,char **, char*);
-int             c_kill          (int ,char **, char*);
-int		c_exit		(int, char **, char*);
-int		c_ifbrowser     (int, char **, char*);
+int             c_help  (int ,char **, char*);
+int             c_who   (int ,char **, char*);
+int             c_link  (int ,char **, char*);
+int             c_msg   (int ,char **, char*);
+int             c_kill  (int ,char **, char*);
+int		c_exit	(int, char **, char*);
+int		c_if	(int, char **, char*);
 
 int             get_class       	(int);
 int             command_shell   	(char *);
 void            set_nonblock 		(int);
-int             send_msg        	(Channel *, char *, ...);
+int             send_msg        	(chan_t *, char *, ...);
 void            rehash_time 		(void);
 int             get_class		(int );
-void            shutdown_       	(Channel *);
+void            shutdown_       	(chan_t *);
 int             parse_conf 		(char *, char **);
 int             ndp_strcmp 		(char *, char *, int);
-void            create_dialer_sock	(Channel *,long,long,int);
+void            create_dialer_sock	(chan_t *,long,long,int);
 

@@ -22,50 +22,47 @@
 
 #include "version.h"
 
-#define  PIDFILE        "ndp.pid"
+#define PIDFILE        "ndp.pid"
+#define MAXARGLINE		30
 
-#define  free_time      (usleep(10000))
+#define OPT_FREETIME      	1000
+#define OPT_TIMEO		1200	/* max-idle time (sec) */
+#define OPT_PTIMEO   		60	/* max-idle time in login */
+#define OPT_TIMEOCONN   	30
+#define OPT_MUSER       	2	/* max number of user  */
+#define OPT_MERRPASS  		5
 
-#define _MAXARGLINE_    30
-
-
-#define _TIMEOUT_		1200	/* max-idle time (sec) */
-#define _PASSTIMEOUT_   	60	/* max-idle time in login */
-#define _TIMEOUTCONN_   	30
-#define _MAXUSER_       	2	/* max number of user  */
-#define _MAXERRONPASS_  	5
-
-// bits for channel_ptr->flag
+// bits for p_chan->flag
 
 
-#define _NULL_			0xff	/* keep the current state */
+#define S_NULL			0xff	/* keep the current state */
 
-#define _READY_         	0x00	/* free channel */
-#define _LOGIN_			0x01	/* password checking */
-#define _SHELL_			0x02	/* waiting for a link */
-#define _INPROGRESS_    	0x03	/* connection in progress */
-#define _CONNECTING_		0x04	/* .. */
-#define _ESTABLISHED_   	0x05	/* channel busy */
+#define S_READY         	0	/* free channel */
+#define S_LOGIN			1	/* password checking */
+#define S_SHELL			2	/* waiting for a link */
+#define S_INPRGR    		3	/* connection in progress */
+#define S_CONN			4	/* .. */
+#define S_ESTABL   		5	/* channel busy */
 
 // bits for ndp.opts 
 
-#define OPT_LOCAL_		0x01
-#define OPT_REMOTE_		0x02
-#define OPT_CONF_		0x04
-#define OPT_LINE_		0x08	/* line by line stream's type (fixed for all channel) */
-#define OPT_CHAR_		0x10
-#define OPT_AUTO_		0x20
+#define OPT_LOCAL		0x01
+#define OPT_REMOTE		0x02
+#define OPT_CONF		0x04
+#define OPT_LINE		0x08	/* line by line stream's type (fixed for all channel) */
+#define OPT_CHAR		0x10
+#define OPT_AUTO		0x20
 
-// bits for channel_ptr->opts
+// bits for p_chan->opts
 
-#define CH_SHELL_		0x0001
-#define CH_IRC_         	0x0002
-#define CH_PROMPT_		0x0004
-#define CH_COOKIES_		0x0008
-#define CH_JOIN_		0x0010
-#define CH_LINE_		0x0020	/* stream: line buffered */
-#define CH_CHAR_		0x0040	/* stream: no buffered   */ 
-#define CH_UNKNOWN_		0x0080	/* strean: unknown       */
+#define CH_SHELL		0x0001
+#define CH_IRC         		0x0002
+#define CH_PROMPT		0x0004
+#define CH_COOKIES		0x0008
+#define CH_JOIN			0x0010
+#define CH_LINE			0x0020	/* stream: line buffered */
+#define CH_CHAR			0x0040	/* stream: no buffered   */ 
+#define CH_UNKNOWN		0x0080	/* strean: unknown       */
 
 #define LOG_LEVEL0		0x00
 #define LOG_LEVEL1		0x01
@@ -73,26 +70,26 @@
 
 // messages...
 
-#define MSG_MOTD_		"Welcome to %s\n",VERSION
+#define MSG_MOTD		"Welcome to %s\n",VERSION
 #define MSG_LOGIN_RAW       	"ndp's password: "
 #define MSG_LOGIN_IRC		"Enter password. Type /quote pass <pass>\n"	
 
-#define MSG_PROMPT_RAW		(channel_ptr->prompt)
+#define MSG_PROMPT_RAW		(p_chan->prompt)
 #define MSG_PROMPT_IRCV		"Type /quote link host:port:<vhost> to connect\n"
 #define MSG_PROMPT_IRC		"Type /quote link host:port to connect\n"
 
-#define MSG_IDLE_        	"idle time exceed\n"	
-#define MSG_MAXUSER_		"number of user exceed. Try later\n" 
-#define MSG_MAXTRIAL_    	"MAXERRONPASS: bye\n"	
-#define MSG_ERRPARSE_		"syntax error. retry\n"    	
-#define MSG_CONNECTING_  	"connecting %s:%d ...\n",multi_inet_nbotoa (channel_ptr->output_addr.sin_addr.s_addr), \
-				ntohs (channel_ptr->output_addr.sin_port)
+#define MSG_IDLE        	"idle time exceed\n"	
+#define MSG_MAXUSER		"number of user exceed. Try later\n" 
+#define MSG_MAXTRIAL    	"MAXERRONPASS: bye\n"	
+#define MSG_ERRPARSE		"syntax error. retry\n"    	
+#define MSG_CONNECTING  	"connecting %s:%d ...\n",multi_inet_nbotoa (p_chan->o_addr.sin_addr.s_addr), \
+				ntohs (p_chan->o_addr.sin_port)
 	
-#define MSG_ESTABLISHED_ 	"connection established\n"	
-#define MSG_CONTIMO_     	"attempt connection reached timeout\n"	
+#define MSG_ESTABLISHED 	"connection established\n"	
+#define MSG_CONTIMO     	"attempt connection reached timeout\n"	
 
-#define IRC_LOGIN_       	0x0300
-#define IRC_PROMPT_      	0x0400
+#define IRC_LOGIN       	0x0300
+#define IRC_PROMPT      	0x0400
 
 // user's class
 

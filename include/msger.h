@@ -29,5 +29,5 @@
 
 /*
 */
-int     send_msg        (Channel *, char *, ...);
+int     send_msg        (chan_t *, char *, ...);
 
