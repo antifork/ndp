@@ -168,7 +168,7 @@ void apg_free_pragma ();
 /* apg type size
 */
 
-static const int apg_types_size[] =
+static const int types_size[] =
   { 0, SIZEOF_INT, SIZEOF_SHORT, SIZEOF_CHAR,
   SIZEOF_LONG, SIZEOF_SHORT, SIZEOF_CHAR, SIZEOF_VOID_P, SIZEOF_VOID_P,
   SIZEOF_VOID_P
@@ -177,7 +177,7 @@ static const int apg_types_size[] =
 /* apg type id
 */
 
-static const char *const apg_types_id[] =
+static const char *const types_id[] =
   { NULL, "INT", "SHORT", "CHAR", "U_32", "U_16", "U_8", "STR", "HOST",
 
   "IPV4"
@@ -186,36 +186,49 @@ static const char *const apg_types_id[] =
 /* apg table
 */
 
-#define MAXTOK 4
-static const int apgtb[][4][4] = {
+#define MAXTOK 5
+static const int apgtb[][5][4] = {
+         0,          0,          0,          0,
+         0,          0,          0,          0,
+         0,          0,          0,          0,
+         0,          0,          0,          0,
+         0,          0,          0,          0,
+         0,          0,          0,          0,
          7,          1,         -1,          0,
          2,     -32768,      32767,          0,
          8,          0,        255,          0,
+         0,          0,          0,          0,
          0,          0,          0,          0,
          1,          0,    1000000,          0,
          1,          0,     100000,          0,
          1,          0,        100,          0,
          1,          0,        100,          0,
-         7,          1,         -1,          0,
-         0,          0,          0,          0,
-         0,          0,          0,          0,
          0,          0,          0,          0,
          7,          1,         -1,          0,
          0,          0,          0,          0,
          0,          0,          0,          0,
          0,          0,          0,          0,
+         0,          0,          0,          0,
          7,          1,         -1,          0,
+         0,          0,          0,          0,
+         0,          0,          0,          0,
+         0,          0,          0,          0,
+         0,          0,          0,          0,
+         7,          1,         -1,          0,
+         0,          0,          0,          0,
          0,          0,          0,          0,
          0,          0,          0,          0,
          0,          0,          0,          0,
          7,          1,         -1,          0,
          8,          1,        255,          0,
+         0,          0,          0,          0,
          0,          0,          0,          0,
          0,          0,          0,          0,
          7,          1,         -1,          0,
          8,          1,        255,          0,
          8,          1,        255,          0,
          2,     -32768,      32767,          0,
+         0,          0,          0,          0,
          2,     -32768,      32767,          0,
          2,     -32768,      32767,          0,
          0,          0,          0,          0,
@@ -226,14 +239,15 @@ static const int apgtb[][4][4] = {
 */
 
 static int apg_offset[][MAXTOK]={
-0, 4, 6, -1, 
-0, 4, 8, 12, 
-0, -1, -1, -1, 
-0, -1, -1, -1, 
-0, -1, -1, -1, 
-0, 4, -1, -1, 
-0, 4, 8, 12, 
-0, 2, -1, -1, 
+-1, -1, -1, -1, -1, 
+-1, 0, 4, 6, -1, 
+-1, 0, 4, 8, 12, 
+-1, 0, -1, -1, -1, 
+-1, 0, -1, -1, -1, 
+-1, 0, -1, -1, -1, 
+-1, 0, 4, -1, -1, 
+-1, 0, 4, 8, 12, 
+-1, 0, 2, -1, -1, 
 };
 
 /* line list
@@ -246,7 +260,7 @@ static const char * const line_list[] = { NULL, "if", "feature", "master", "user
 /* rep limits
 */
 
-static const short rep_limits[][2] = { {0,0},
+static unsigned long long  rep_limits[][2] = { {0,0},
 {     1,     1 },
 {     1,     1 },
 {     1,    -1 },
@@ -257,7 +271,7 @@ static const short rep_limits[][2] = { {0,0},
 {    -1,    -1 },
 };
 
-static short rep_counter[] ={
+static unsigned long long rep_counter[] ={
  0, 0, 0, 0, 0, 0, 0, 0, 0 };
 /* seg_t
 */

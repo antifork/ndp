@@ -51,6 +51,7 @@ static unsigned char *token_buff;
 static grill_t *apg_stream;
 static grill_t *apg_arena;
 static seg_t *root_seg;
+static seg_t *head_seg;
 
 int apg_errno;
 
@@ -59,12 +60,17 @@ int apg_errno;
 
 #define   _APG_OPEN              0
 #define   _APG_CLOSE             1
-#define   _ACK_CHAR           0x06
+
+#define   _ACK_           	0x06
+
+/* internal flags */
 
 #define _APG_PARSED_GRILL     0x01	/* prevent cycles in apg_get_line(); */
 #define _APG_RESET_STREAM     0x02
 #define _APG_OCT_TOKEN        0x04
 #define _APG_HEX_TOKEN        0x08
+
+/* msg error codes */
 
 #define _APG_TYPE_ERR   0x01
 #define _APG_NULL_ERR	0x02
@@ -110,7 +116,7 @@ fatalerr (char *pattern, ...)
 }
 
 static char *
-ioctl_apg_buffer (char *fn, int flag)
+ioctl_buffer (char *fn, int flag)
 {
   int fd;
   struct stat lstat;
@@ -188,8 +194,7 @@ _ac_2 (unsigned char **tok, unsigned char **tok_0, unsigned char **strm)
 
 char escape_chars[256] =
   {['a'] '\a',['b'] '\b',['t'] '\t',['n'] '\n',['v'] '\v',['f'] '\f',
-  ['r'] '\r'
-};
+    ['r'] '\r' };
 
 static int
 _ac_3 (unsigned char **tok, unsigned char **tok_0, unsigned char **strm)
@@ -216,7 +221,7 @@ _ac_3 (unsigned char **tok, unsigned char **tok_0, unsigned char **strm)
 	  else
 	    apg_flags |= _APG_OCT_TOKEN;
 
-	  **tok_0 = _ACK_CHAR;
+	  **tok_0 = _ACK_;
 	  (*strm)--;
 	  break;
 
@@ -265,36 +270,18 @@ static int (*apg_mealy_action_table[9][8]) (unsigned char **,
 					    unsigned char **,
 					    unsigned char **) =
 {
-  {
-  _ac_1, _ac_0, _ac_4, _ac_4, _ac_4, _ac_4, _ac_0, _ac_0}
-  ,
-  {
-  _ac_1, _ac_4, _ac_2, _ac_4, _ac_4, _ac_4, _ac_0, _ac_4}
-  ,
-  {
-  _ac_1, _ac_4, _ac_4, _ac_4, _ac_0, _ac_3, _ac_0, _ac_4}
-  ,
-  {
-  _ac_1, _ac_2, _ac_4, _ac_2, _ac_0, _ac_3, _ac_0, _ac_2}
-  ,
-  {
-  _ac_0, _ac_0, _ac_0, _ac_0, _ac_0, _ac_0, _ac_0, _ac_0}
-  ,
-  {
-  _ac_1, _ac_1, _ac_1, _ac_1, _ac_0, _ac_3, _ac_1, _ac_2}
-  ,
-  {
-  _ac_4, _ac_4, _ac_4, _ac_4, _ac_4, _ac_4, _ac_0, _ac_4}
-  ,
-  {
-  _ac_4, _ac_4, _ac_2, _ac_4, _ac_4, _ac_4, _ac_0, _ac_4}
-  ,
-  {
-  _ac_4, _ac_2, _ac_4, _ac_2, _ac_4, _ac_4, _ac_0, _ac_2}
-};
+  { _ac_1, _ac_0, _ac_4, _ac_4, _ac_4, _ac_4, _ac_0, _ac_0} ,
+  { _ac_1, _ac_4, _ac_2, _ac_4, _ac_4, _ac_4, _ac_0, _ac_4} ,
+  { _ac_1, _ac_4, _ac_4, _ac_4, _ac_0, _ac_3, _ac_0, _ac_4} ,
+  { _ac_1, _ac_2, _ac_4, _ac_2, _ac_0, _ac_3, _ac_0, _ac_2} ,
+  { _ac_0, _ac_0, _ac_0, _ac_0, _ac_0, _ac_0, _ac_0, _ac_0} ,
+  { _ac_1, _ac_1, _ac_1, _ac_1, _ac_0, _ac_3, _ac_1, _ac_2} ,
+  { _ac_4, _ac_4, _ac_4, _ac_4, _ac_4, _ac_4, _ac_0, _ac_4} ,
+  { _ac_4, _ac_4, _ac_2, _ac_4, _ac_4, _ac_4, _ac_0, _ac_4} ,
+  { _ac_4, _ac_2, _ac_4, _ac_2, _ac_4, _ac_4, _ac_0, _ac_2} };
 
 static char *
-apg_get_token (char *ptr)
+get_token (char *ptr)
 {
   register int reg_input, reg_state;
 
@@ -348,7 +335,7 @@ apg_get_token (char *ptr)
 */
 
 static grill_t *
-apg_alloc_segment (grill_t * p_ptr)
+alloc_segment (grill_t * p_ptr)
 {
 
   grill_t *q_ptr;
@@ -368,7 +355,7 @@ apg_alloc_segment (grill_t * p_ptr)
 }
 
 static int
-apg_get_ld (char *frame)
+get_lineid (char *frame)
 {
   register int i = 1, fd = 1;
 
@@ -383,18 +370,17 @@ apg_get_ld (char *frame)
 
 }
 
-
 /* token err interface
 */
 
 static void
-apg_token_error (int line_id, int token_id, int type, int errn0, int low,
+token_fatalerr (int line_id, int token_id, int type, int errn0, int low,
 		 int high, char *token)
 {
   char *p = token;
 
 
-  while ((p = strchr (p, _ACK_CHAR)))
+  while ((p = strchr (p, _ACK_)))
     *p = '\\';
 
   switch (errn0)
@@ -403,27 +389,27 @@ apg_token_error (int line_id, int token_id, int type, int errn0, int low,
       fprintf (stderr,
 	       "%s:%d: label=%s,token=%d -> {%s} is designed to be a %s type; exit forced.\n",
 	       file_name, apg_buff_line + 1, line_list[line_id], token_id,
-	       token, apg_types_id[type]);
+	       token, types_id[type]);
       break;
     case _APG_NULL_ERR:
       fprintf (stderr,
-	       "%s:%d: label=%s,token=%d -> {%s} isn't an optional argument; exit forced.\n",
-	       file_name, apg_buff_line + 1, line_list[line_id], token_id,
-	       token, apg_types_id[type]);
+               "%s:%d: label=%s,token=%d -> {%s} isn't an optional argument; exit forced.\n",
+               file_name, apg_buff_line + 1, line_list[line_id], token_id,
+               token, types_id[type]);
 
       break;
     case _APG_OFFSET_ERR:
-      fprintf (stderr,
-	       "%s:%d: label=%s,token=%d -> {%s} too many tokens; exit forced.\n",
-	       file_name, apg_buff_line + 1, line_list[line_id], token_id,
-	       token);
+            fprintf (stderr, 
+		    "%s:%d: label=%s,token=%d -> {%s} too many tokens; exit forced.\n",
+	            file_name, apg_buff_line + 1, line_list[line_id], token_id,
+	            token);
 
       break;
     case _APG_BOUND_ERR:
       fprintf (stderr,
 	       "%s:%d: label=%s,token=%d -> {%s} is designed to be a %s[%d,%d]. Out of range; exit forced.\n",
 	       file_name, apg_buff_line + 1, line_list[line_id], token_id,
-	       token, apg_types_id[type], low, high);
+	       token, types_id[type], low, high);
 
       break;
     case _APG_ESC_ERR:
@@ -461,16 +447,14 @@ apg_token_error (int line_id, int token_id, int type, int errn0, int low,
 static void
 add_segment (char *r)
 {
-  seg_t *p = root_seg, *new_p;
+  seg_t *p = head_seg, *new_p;
 
-  new_p = (seg_t *) malloc (sizeof (seg_t));
-  new_p->ptr = r;
+  new_p       = (seg_t *) malloc (sizeof (seg_t));
+  new_p->ptr  = r;
   new_p->next = NULL;
 
-  for (; p != NULL && p->next != NULL; p = p->next);
-
   if (p)
-    p->next = new_p;
+    p->next = new_p = head_seg ;
   else
     root_seg = new_p;
 
@@ -531,7 +515,7 @@ proc_string (char *token, int line_id, int token_id)
   safe_token = ptr = (char *) realloc (safe_token, strlen (token) + 1);
   strcpy (safe_token, token);
 
-  while ((ptr = (char *) strchr (ptr, _ACK_CHAR)))
+  while ((ptr = (char *) strchr (ptr, _ACK_)))
     {
       register int i = strholen (ptr + 1);
       register int j = strlen (ptr + i);
@@ -541,7 +525,7 @@ proc_string (char *token, int line_id, int token_id)
       *ptr = (char) strtol (bufftemp, NULL, 0);
 
       if (!*ptr || !i)
-	apg_token_error (line_id, token_id, T_STR, _APG_ESC_ERR, 0, 0, token);
+	token_fatalerr (line_id, token_id, T_STR, _APG_ESC_ERR, 0, 0, token);
 
       memmove (ptr + 1, ptr + i + 1, j);
       *(ptr + j + 1) = 0;
@@ -555,45 +539,39 @@ proc_string (char *token, int line_id, int token_id)
 /* apg type checks
 */
 
-#define PROC_OBJECT(p) ( *p == _ACK_CHAR ? (p+1) : (p)  )
+#define PROC_OBJECT(p) ( *p == _ACK_ ? (p+1) : (p)  )
 
-#define L_TYPE(l,t)    apgtb[l-1][t-1][0]
-#define L_LOW(l,t)     apgtb[l-1][t-1][1]
-#define L_HIGH(l,t)    apgtb[l-1][t-1][2]
-#define L_REGEX(l,t)   apgtb[l-1][t-1][3]
+#define L_TYPE(l,t)    apgtb[l][t][0]
+#define L_LOW(l,t)     apgtb[l][t][1] 
+#define L_HIGH(l,t)    apgtb[l][t][2] 
+#define L_REGEX(l,t)   apgtb[l][t][3] 
 
 static void
-apg_token_reg (char *token, int line_id, int token_id)
+token_analysis (char *token, int line_id, int token_id)
 {
+  char *endptr, *pp=NULL;
+  static void *sp;
   int offset = 0;
-  char *endptr;
 
   /* first step */
-
-  if ((offset = apg_offset[line_id - 1][token_id - 1]) == -1)
-    apg_token_error (line_id, token_id, L_TYPE (line_id, token_id),
-		     _APG_OFFSET_ERR, L_LOW (line_id, token_id),
-		     L_HIGH (line_id, token_id), token);
+  
+  if( (offset= apg_offset[line_id][token_id])== -1)
+      token_fatalerr (line_id, token_id, L_TYPE (line_id,token_id), _APG_OFFSET_ERR,
+                                   L_LOW (line_id,token_id), L_HIGH (line_id,token_id), token);
 
   if (token && !*token)
     {
       /* (NULL) token */
-
-      if (L_LOW (line_id, token_id))
-	apg_token_error (line_id, token_id, L_TYPE (line_id, token_id),
-			 _APG_NULL_ERR, L_LOW (line_id, token_id),
-			 L_HIGH (line_id, token_id), token);
-
-      return;
+      
+      if ( L_LOW(line_id,token_id) )
+       token_fatalerr (line_id, token_id, L_TYPE (line_id,token_id), _APG_NULL_ERR,
+                                   L_LOW (line_id,token_id), L_HIGH (line_id,token_id), token);
+			
+    return;
 
     }
 
-
-  {
-    static void *sp;
-    char *pp = NULL;
-
-    switch (L_TYPE (line_id, token_id))
+    switch (L_TYPE (line_id,token_id))
       {
       case T_STR:
       case T_HOST:
@@ -608,7 +586,7 @@ apg_token_reg (char *token, int line_id, int token_id)
 	break;
       }
 
-    switch (L_TYPE (line_id, token_id))
+    switch (L_TYPE (line_id,token_id))
       {
 
 
@@ -619,7 +597,7 @@ apg_token_reg (char *token, int line_id, int token_id)
       case T_CHAR:
       case T_U_8:
 
-	if (L_TYPE (line_id, token_id) == T_CHAR && strlen (token) == 1)
+	if (L_TYPE (line_id,token_id) == T_CHAR && strlen (token) == 1)
 	  {
 	    O_PUSH (apg_stream, offset, token, char);
 	    return;
@@ -629,11 +607,9 @@ apg_token_reg (char *token, int line_id, int token_id)
 
 	if (!*endptr)
 	  {
-	    if (C_BOUND
-		(L_LOW (line_id, token_id), *(long *) sp,
-		 L_HIGH (line_id, token_id)))
+	    if (C_BOUND (L_LOW (line_id,token_id), *(long *) sp, L_HIGH (line_id,token_id)))
 	      {
-		switch (L_TYPE (line_id, token_id))
+		switch (L_TYPE (line_id,token_id))
 		  {
 		  case T_INT:
 		    O_PUSH (apg_stream, offset, sp, int);
@@ -657,14 +633,12 @@ apg_token_reg (char *token, int line_id, int token_id)
 		return;
 	      }
 	    else
-	      apg_token_error (line_id, token_id, L_TYPE (line_id, token_id),
-			       _APG_BOUND_ERR, L_LOW (line_id, token_id),
-			       L_HIGH (line_id, token_id), token);
+	      token_fatalerr (line_id, token_id, L_TYPE (line_id,token_id), _APG_BOUND_ERR,
+			       L_LOW (line_id,token_id), L_HIGH (line_id,token_id), token);
 	  }
 	else
-	  apg_token_error (line_id, token_id, L_TYPE (line_id, token_id),
-			   _APG_TYPE_ERR, L_LOW (line_id, token_id),
-			   L_HIGH (line_id, token_id), token);
+	  token_fatalerr (line_id, token_id, L_TYPE (line_id,token_id), _APG_TYPE_ERR,
+			   L_LOW (line_id,token_id), L_HIGH (line_id,token_id), token);
 	return;
 	break;
 
@@ -674,9 +648,8 @@ apg_token_reg (char *token, int line_id, int token_id)
 	  char *new_token = proc_string (token, line_id, token_id);
 
 
-	  if (!(L_LOW (line_id, token_id) || L_HIGH (line_id, token_id))
-	      || C_BOUND (L_LOW (line_id, token_id), strlen (new_token),
-			  L_HIGH (line_id, token_id)))
+	  if (!(L_LOW (line_id,token_id) || L_HIGH (line_id,token_id))
+	      || C_BOUND (L_LOW (line_id,token_id), strlen (new_token), L_HIGH (line_id,token_id)))
 	    {
 	      strcpy (pp, new_token);
 	      P_PUSH (apg_stream, offset, pp);
@@ -684,9 +657,8 @@ apg_token_reg (char *token, int line_id, int token_id)
 
 	    }
 	  else
-	    apg_token_error (line_id, token_id, L_TYPE (line_id, token_id),
-			     _APG_BOUND_ERR, L_LOW (line_id, token_id),
-			     L_HIGH (line_id, token_id), token);
+	    token_fatalerr (line_id, token_id, L_TYPE (line_id,token_id), _APG_BOUND_ERR,
+			     L_LOW (line_id,token_id), L_HIGH (line_id,token_id), token);
 
 	  return;
 	}
@@ -718,20 +690,17 @@ apg_token_reg (char *token, int line_id, int token_id)
 	      P_PUSH (apg_stream, offset, pp);
 	    }
 
-	  else if (L_TYPE (line_id, token_id) == T_IPV4)
-	    apg_token_error (line_id, token_id, L_TYPE (line_id, token_id),
-			     _APG_IPV4_ERR, L_LOW (line_id, token_id),
-			     L_HIGH (line_id, token_id), token);
+	  else if (L_TYPE (line_id,token_id) == T_IPV4)
+	    token_fatalerr (line_id, token_id, L_TYPE (line_id,token_id), _APG_IPV4_ERR,
+			     L_LOW (line_id,token_id), L_HIGH (line_id,token_id), token);
 	  else
 	    {
 	      while (*i != 0 && C_$ (*i))
 		i++;
 
 	      if (*i)
-		apg_token_error (line_id, token_id,
-				 L_TYPE (line_id, token_id), _APG_HOST_ERR,
-				 L_LOW (line_id, token_id), L_HIGH (line_id,
-								    token_id),
+		token_fatalerr (line_id, token_id, L_TYPE (line_id,token_id),
+				 _APG_HOST_ERR, L_LOW (line_id,token_id), L_HIGH (line_id,token_id),
 				 token);
 	      else
 		{
@@ -745,7 +714,6 @@ apg_token_reg (char *token, int line_id, int token_id)
 	break;
 
 
-      }
   }
   return;
 }
@@ -854,7 +822,7 @@ apg_get_line (grill_t ** apg_user_ptr)
 grill_t *
 apg_parser (int q, ...)
 {
-  int i = q;
+  register int i = q;
   va_list ap;
   char *b_stream = NULL, *tk = NULL;
   char *file;
@@ -869,7 +837,7 @@ apg_parser (int q, ...)
 
   file = va_arg (ap, char *);
 
-  while (i-- && !(b_stream = ioctl_apg_buffer (file, _APG_OPEN)))
+  while (i-- && !(b_stream = ioctl_buffer (file, _APG_OPEN)))
     file = va_arg (ap, char *);
 
   if (!b_stream)
@@ -888,14 +856,14 @@ apg_parser (int q, ...)
 
   va_end (ap);
 
-  while ((tk = apg_get_token (b_stream)))
+  while ((tk = get_token (b_stream)))
     {
 
       if (apg_token == 1)
 	{
 	  /* label line */
-	  apg_stream = apg_alloc_segment (apg_stream);
-	  apg_stream->type_line = apg_get_ld (tk);
+	  apg_stream = alloc_segment (apg_stream);
+	  apg_stream->type_line = get_lineid (tk);
 
 /* man rep
 */
@@ -914,7 +882,7 @@ apg_parser (int q, ...)
 	}
       else
 	/* token */
-	apg_token_reg (tk, apg_stream->type_line, apg_token - 1);
+	token_analysis (tk, apg_stream->type_line, apg_token - 1);
 
     }
 
@@ -932,10 +900,11 @@ apg_parser (int q, ...)
 
 
   free (token_buff);
-  ioctl_apg_buffer (NULL, _APG_CLOSE);
-
+  ioctl_buffer (NULL, _APG_CLOSE);
 
   apg_flags |= _APG_PARSED_GRILL;
   return apg_arena;
 
 }
+
+
