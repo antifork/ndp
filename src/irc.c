@@ -48,7 +48,7 @@ match_irc (char *buffer)
 }
 
 
-void
+int
 irc_postlogin (void)
 {
       char *ptr=NULL;
@@ -60,12 +60,8 @@ irc_postlogin (void)
       else
 	    ptr= strmrg (ptr, "ndp-");
 
-      strmrg (ptr, "\n");
-
-      send (channel_ptr->fd_out, ptr, strlen (ptr), 0);
+      ptr = strmrg (ptr, "\nUSER ");
 	
-      ptr= strmrg ((char *)NULL, "USER ");
-
       if (*channel_ptr->username)
 	    ptr = strmrg (ptr, channel_ptr->username);
       else
@@ -73,9 +69,7 @@ irc_postlogin (void)
 
       ptr= strmrg (ptr, "\n");
 
-      send (channel_ptr->fd_out, ptr, strlen (ptr), 0);
-
-      return;
+      return (send (channel_ptr->fd_out, ptr, strlen (ptr), 0));
 
 }
 

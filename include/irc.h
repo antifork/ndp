@@ -30,7 +30,7 @@
 
 int             match_irc 	(char *);
 char           *mystrstr        (char *, char *);
-void            irc_postlogin 	(void);
+int             irc_postlogin 	(void);
 void            irc_controller 	(char *);
 int             parse_irc       (char *, char **);
 void    	stream_guesser	(char *);

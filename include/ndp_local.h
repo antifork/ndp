@@ -56,7 +56,7 @@ void	shutdown_       	(Channel *);
 void	set_nonblock 		(int);
 void	set_block		(int);
 void	usage 			(char *, char *, char *);
-void	irc_postlogin 		(void);
+int	irc_postlogin 		(void);
 void	stream_guesser  	(char *);
 void	readconf        	(char *);
 void	create_dialer_sock	(Channel *,long,long,int);

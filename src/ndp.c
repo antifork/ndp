@@ -313,6 +313,7 @@ handle_link(void)
 	FD_SET(channel_ptr->fd_out, &r_set);
 	FD_SET(channel_ptr->fd_out, &w_set);
 
+
 	switch (select(FD_SETSIZE, &r_set, &w_set, NULL, &delay)) {
 	case 0:
 		return _ESTABLISHED_;
@@ -349,9 +350,9 @@ handle_link(void)
 
 			if ((bt = read_from_channel(channel_ptr->fd_out, channel_ptr->buffer_in)) == -1)
 				return _READY_;
-
+			
 			push_buffer_cache(channel_ptr->buffer_in);
-
+			
 			if (flush_buffer_cache() == _READY_)
 				return _READY_;
 
@@ -474,7 +475,9 @@ connect_target(void)
 			       ntohs(channel_ptr->output_addr.sin_port));
 
 		if (channel_ptr->opts & CH_IRC_)
-			irc_postlogin();
+			if(irc_postlogin()<=0)
+				return _READY_;
+
 		rehash_time();
 
 		return _ESTABLISHED_;
@@ -505,8 +508,10 @@ connect_target(void)
 			       multi_inet_nbotoa(channel_ptr->output_addr.sin_addr.s_addr),
 			       ntohs(channel_ptr->output_addr.sin_port));
 
-		if (channel_ptr->opts & CH_IRC_)
-			irc_postlogin();
+                if (channel_ptr->opts & CH_IRC_)
+                        if(irc_postlogin()<=0)
+                                return _READY_;
+
 		rehash_time();
 
 		return _ESTABLISHED_;
