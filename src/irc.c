@@ -25,50 +25,47 @@
 
 extern Channel *channel_ptr;
 
-static char *irc_commands[] =
-  { "NICK", "USER", "ISON", "PING", "QUIT", "JOIN", "NOTICE", NULL };
+static char *irc_commands[] = { "NICK", "USER", "ISON", "PING", "QUIT", "JOIN", "NOTICE", NULL };
 static char bufftmp[CHAN_SIZE_BUFF];
 
 char sep = 0xff;
 
 int
-match_irc (char *buffer)
+match_irc (buff)
+   char *buff;
 {
-
   register int i = 0;
 
   while (irc_commands[i] && (i < _MAXARGLINE_))
     {
-      if (!strncmp (buffer, irc_commands[i], strlen (irc_commands[i])))
+      if (!strncmp (buff, irc_commands[i], strlen (irc_commands[i])))
 	break;
       i++;
     }
 
   return ((i == 7) ? 0 : (i + 1));
-
 }
 
 
 int
-irc_postlogin (void)
+irc_postlogin ()
 {
   char *ptr = NULL;
 
   ptr = strmrg ((char *) NULL, "NICK ");
 
-  if (*channel_ptr->usernick)
+  if (*channel_ptr->usernick != '\0' )
     ptr = strmrg (ptr, channel_ptr->usernick);
   else
     ptr = strmrg (ptr, "ndp-");
 
   ptr = strmrg (ptr, "\nUSER ");
 
-  if (*channel_ptr->username)
+  if (*channel_ptr->username != '\0')
     ptr = strmrg (ptr, channel_ptr->username);
   else
     ptr =
-      strmrg (ptr,
-	      "ndp ndp ndp :fake client using ndp. http://awgn.antifork.org");
+      strmrg (ptr, "ndp ndp ndp :fake client using ndp. http://awgn.antifork.org");
 
   ptr = strmrg (ptr, "\n");
 
@@ -81,7 +78,8 @@ irc_postlogin (void)
 #define IRC_COMM_USER	0x02
 
 void
-irc_controller (char *ptr)
+irc_controller (ptr)
+   char *ptr;
 {
 
   char *argirc[_MAXARGLINE_];
@@ -149,7 +147,8 @@ irc_controller (char *ptr)
 
 
 void
-stream_guesser (char *ptr)
+stream_guesser (ptr)
+   char *ptr;
 {
 
   register int i = 0;

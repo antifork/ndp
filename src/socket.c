@@ -29,10 +29,9 @@ extern ndpControl ndp;
 
 extern int Nchannel, fd_in;
 
-
-
 void
-set_nonblock (int sock)
+set_nonblock (sock)
+   int sock;
 {
   register int val = 0;
 
@@ -40,11 +39,11 @@ set_nonblock (int sock)
   val |= O_NONBLOCK;
   fcntl (sock, F_SETFL, val);
   return;
-
 }
 
 void
-set_block (int sock)
+set_block (sock)
+   int sock;
 {
   register int val = 0;
 
@@ -52,12 +51,15 @@ set_block (int sock)
   val &= ~O_NONBLOCK;
   fcntl (sock, F_SETFL, val);
   return;
-
 }
 
 
 void
-create_dialer_sock (Channel * ptr, long vhost, long rhost, int rport)
+create_dialer_sock (ptr, vhost, rhost, rport)
+   Channel * ptr;
+   long vhost;
+   long rhost;
+   int  rport;
 {
   /* SO_LINGER the system will process the close in a manner
      * that allows to continue as quickly as possible */
@@ -103,7 +105,8 @@ create_dialer_sock (Channel * ptr, long vhost, long rhost, int rport)
 }
 
 void
-shutdown_ (Channel * parg)
+shutdown_ (parg)
+   Channel * parg;
 {
 
   register Channel *ptr;
@@ -131,7 +134,8 @@ shutdown_ (Channel * parg)
 }
 
 void
-halfshutdown_ (Channel * parg)
+halfshutdown_ (parg)
+   Channel * parg;
 {
   struct linger linger_ = { 0, 0 };
   register Channel *ptr;
@@ -162,11 +166,13 @@ halfshutdown_ (Channel * parg)
 
 
 int
-read_from_channel (int fd, char *buffer)
+read_from_channel (fd, buff)
+   int fd;
+   char *buff;
 {
   register int nbyt = 0;
 
-  if ((nbyt = recv (fd, buffer, CHAN_SIZE_BUFF - 1, 0)) <= 0)
+  if ((nbyt = recv (fd, buff, CHAN_SIZE_BUFF - 1, 0)) <= 0)
     {
       shutdown_ (NULL);
       return -1;
@@ -177,11 +183,14 @@ read_from_channel (int fd, char *buffer)
 
 
 int
-write_to_channel (int fd, char *buffer, int bt)
+write_to_channel (fd, buff, bt)
+   int fd;
+   char *buff;
+   int bt;
 {
   register int wbyt = 0;
 
-  if ((wbyt = send (fd, buffer, bt, 0)) <= 0)
+  if ((wbyt = send (fd, buff, bt, 0)) <= 0)
     {
       shutdown_ (NULL);
       return -1;

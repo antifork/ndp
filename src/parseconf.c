@@ -31,7 +31,8 @@ extern char opts;
 static char bufftmp[CHAN_SIZE_BUFF];
 
 int
-parseconf (char *config)
+parseconf (config)
+   char *config;
 {
   int i;
   grill_t *ptr;

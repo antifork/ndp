@@ -61,12 +61,15 @@ unsigned char pass[MAXPASSWDLEN + 1], r_pass[MAXPASSWDLEN + 1], md5[17],
   buff[33];
 
 void
-md5_printable (unsigned char *key, unsigned char *p)
+md5_printable (key, p)
+   unsigned char *key; 
+   unsigned char *p;
 {
   unsigned char st[3];
   register int i, j;
 
-  *p = 0x00;
+  *p = '\0';
+
   for (i = 0; i < 4; i++)
     {
       for (j = 0; j < 4; j++)
@@ -81,7 +84,7 @@ md5_printable (unsigned char *key, unsigned char *p)
 }
 
 int
-main (int argc, char **argv)
+main (int argc, char **argv )
 {
   int ct = 0;
   struct md5_ctx hash;

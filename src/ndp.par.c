@@ -1,5 +1,5 @@
 #line 2 "/usr/local/share/apg/apg.db"
-/* $ apg.db,v 1.14 2001/07/26 21:42:51 awgn Exp $ */
+/* $Id$ */
 #line 202 "/usr/local/share/apg/apg.db"
 /*
  *  $Id$
@@ -51,9 +51,7 @@ static char *file_name;
 static char *file_image;
 
 static int apg_flags;
-
 static int apg_current_line, apg_buff_line;
-
 static int apg_state_code, apg_input_code;
 
 static int apg_token;
@@ -75,7 +73,7 @@ int apg_errno;
 
 /* common defines and internal flags */
 
-#line 267 "/usr/local/share/apg/apg.db"
+#line 265 "/usr/local/share/apg/apg.db"
 #define APG_OPEN                0
 #define APG_CLOSE               1
 
@@ -91,19 +89,19 @@ int apg_errno;
 
 /* msg error codes */
 
-#define APG_TYPE_ERR         0x01
-#define APG_NULL_ERR	     0x02
-#define APG_OFFSET_ERR       0x03
-#define APG_LIMIT_ERR        0x04
-#define APG_ESC_ERR          0x05
-#define APG_FEW_ERR	     0x06
-#define APG_MANY_ERR 	     0x07
-#define APG_IPV4_ERR         0x08
-#define APG_HOST_ERR         0x09
+#define APG_TYPE_ERR         1
+#define APG_NULL_ERR	     2
+#define APG_OFFSET_ERR       3
+#define APG_LIMIT_ERR        4
+#define APG_ESC_ERR          5
+#define APG_FEW_ERR	     6
+#define APG_MANY_ERR 	     7
+#define APG_IPV4_ERR         8
+#define APG_HOST_ERR         9
 
 /* macros */
 
-#line 293 "/usr/local/share/apg/apg.db"
+#line 291 "/usr/local/share/apg/apg.db"
 #if defined (__GNUC__) && !defined (__STRICT_ANSI__) && !defined (__ANSI__) && !defined(__cplusplus) 
 int c_index[256] =
   {['#'] 1,[APG_SEPLINE] 2,[APG_SEPTOKEN] 3,['\''] 4,['\\'] 5,[' '] 6,
@@ -136,13 +134,13 @@ int c_index[256];
 
 /* private functions, mealy tables */
 
-#line 324 "/usr/local/share/apg/apg.db"
+#line 322 "/usr/local/share/apg/apg.db"
 static void
 #if __STDC__
 fatalerr (char *pattern, ...)
 #else
 fatalerr (pattern, va_alist)
-	char *patter;
+	char *pattern;
 	va_dcl
 #endif
 {
@@ -422,12 +420,11 @@ get_token ()
 
 /* arena menagement */
 
-#line 608 "/usr/local/share/apg/apg.db"
+#line 606 "/usr/local/share/apg/apg.db"
 static grill_t *
 alloc_segment (AAGRILLx_ARG p)
      AAGRILLx_DECL(p)
 {
-
   grill_t *q;
 
   /* p reasonably points to the last grill_t. In case it doesn't ... */
@@ -443,7 +440,6 @@ alloc_segment (AAGRILLx_ARG p)
     return (apg_arena = apg_stream = q);
   else
     return (apg_stream = p->next = q);
-
 }
 
 static
@@ -483,8 +479,7 @@ Preliminary analysis suggests there are no funnels.  */
   if (hash == line_v[high].hash)
     return (high);
 
-  fatalerr ("%s:%d: `%s' unknown line label", file_name, apg_buff_line + 1,
-	    key);
+  fatalerr ("%s:%d: `%s' unknown line label", file_name, apg_buff_line + 1, key);
 
   return (-1);			/* unreachable */
 
@@ -492,7 +487,7 @@ Preliminary analysis suggests there are no funnels.  */
 
 /* token err interface */
 
-#line 676 "/usr/local/share/apg/apg.db"
+#line 671 "/usr/local/share/apg/apg.db"
 #define APGLT	"%s:%d: label=%s,token=%d {%s}"  /* label & token */
 #define APGLTarg file_name, apg_current_line + 1, line_v[line_id].id, token_id, token
 #define APGL	"%s: label=%s"			 /* label only */
@@ -514,9 +509,10 @@ token_fatalerr (AAINT_ARG line_id,
      AAINT_DECL(high)
      AACHARx_DECL(token)
 {
-  char *p = token;
+  char *p;
 
-
+  p = token;
+ 
   while (p && (p = strchr (p, APG_ACK_CHR)))
     *p = '\\';
 
@@ -543,16 +539,16 @@ token_fatalerr (AAINT_ARG line_id,
     case APG_FEW_ERR:
       fprintf (stderr, APGL " is designed to occur at least %d time;\n",  APGLarg , low);
       break;
-#line 727 "/usr/local/share/apg/apg.db"
+#line 723 "/usr/local/share/apg/apg.db"
     case APG_IPV4_ERR:
       fprintf (stderr, APGLT " is designed to be a valid ipv4;\n", APGLTarg );
       break;
-#line 731 "/usr/local/share/apg/apg.db"
+#line 727 "/usr/local/share/apg/apg.db"
     case APG_HOST_ERR:
       fprintf (stderr, APGLT " is designed to be a valid host;\n", APGLTarg );
       break;
 
-#line 736 "/usr/local/share/apg/apg.db"
+#line 732 "/usr/local/share/apg/apg.db"
     }
 
   apg_flags |= APG_FATALERR;
@@ -560,12 +556,14 @@ token_fatalerr (AAINT_ARG line_id,
 
 /* ymalloc & seg_t */
 
-#line 742 "/usr/local/share/apg/apg.db"
+#line 738 "/usr/local/share/apg/apg.db"
 static void
 alloc_seg_t (AACHARx_ARG r)
      AACHARx_DECL(r)
 {
-  seg_t *p = tail_seg, *q;
+  seg_t *p, *q;
+
+  p = tail_seg;
 
   q = (seg_t *) xmalloc (sizeof (seg_t));
   q->ptr = r;
@@ -594,7 +592,7 @@ ymalloc (AASIZE_ARG s)
 
 /* strings function */
 
-#line 774 "/usr/local/share/apg/apg.db"
+#line 772 "/usr/local/share/apg/apg.db"
 #ifdef __GNUC__
 __inline
 #else
@@ -603,8 +601,12 @@ static int
 strholen (AACHARx_ARG p)
      AACHARx_DECL(p)
 {
-  register int c = 1, s = 0;
-  register char *_p = p;
+  register int c, s;
+  register char *_p;
+
+  c  = 1;
+  s  = 0;
+  _p = p;
 
   if (*_p++ != '0')
     return 0;
@@ -634,7 +636,7 @@ strholen (AACHARx_ARG p)
 
 /* apg type checks */
 
-#line 812 "/usr/local/share/apg/apg.db"
+#line 814 "/usr/local/share/apg/apg.db"
 #define APG_PROC_OBJECT(p) ( *p == APG_ACK_CHR ? (p+1) : (p)  )
 
 #define APG_LTYPE(l,t)    apgtb[l][t][0]
@@ -669,17 +671,19 @@ token_analysis (AACHARx_ARG token, AAINT_ARG line_id, AAINT_ARG token_id)
      AAINT_DECL(token_id)
 
 {
-  char *endptr, *pp = NULL;
+  char *endptr, *pp;
   long sp;
-  int offset = 0;
+  int  offset;
 
-
+  pp     = (char *)NULL;
+  offset = 0; 
+ 
   /* first step */
 
   if ((offset = apg_offset[line_id][token_id]) == -1)
     token_fatalerr (APGE_ARG0);
 
-  if (token && *token == '\0')
+  if (token != NULL && *token == '\0')
     return;			/* NULL token */
 
   switch (APG_LTYPE (line_id, token_id))
@@ -699,7 +703,7 @@ token_analysis (AACHARx_ARG token, AAINT_ARG line_id, AAINT_ARG token_id)
   switch (APG_LTYPE (line_id, token_id))
     {
 
-#line 877 "/usr/local/share/apg/apg.db"
+#line 881 "/usr/local/share/apg/apg.db"
     case T_INT:
     case T_U_32:
     case T_SHORT:
@@ -718,10 +722,10 @@ token_analysis (AACHARx_ARG token, AAINT_ARG line_id, AAINT_ARG token_id)
       if (*endptr=='\0')
 	{
 
-	  if ( APG_CLIMIT (	APG_LTYPE (line_id, token_id), 
-				APG_LLOW  (line_id, token_id),
-	       			sp, 
-				APG_LHIGH (line_id, token_id)))
+	  if ( APG_CLIMIT ( APG_LTYPE (line_id, token_id), 
+			    APG_LLOW  (line_id, token_id),
+	       		    sp, 
+			    APG_LHIGH (line_id, token_id)))
 	    {
 	      switch (APG_LTYPE (line_id, token_id))
 		{
@@ -755,7 +759,7 @@ token_analysis (AACHARx_ARG token, AAINT_ARG line_id, AAINT_ARG token_id)
       return;
       break;
 
-#line 933 "/usr/local/share/apg/apg.db"
+#line 937 "/usr/local/share/apg/apg.db"
     case T_STR:
       {
 	strcpy (pp, token);
@@ -784,12 +788,12 @@ token_analysis (AACHARx_ARG token, AAINT_ARG line_id, AAINT_ARG token_id)
 	  }
 
 #line 1003 "/usr/local/share/apg/apg.db"
-	if (!(	APG_LLOW (line_id, token_id)
-	    || 	APG_LHIGH (line_id, token_id))
-	    || 	APG_CLIMIT (	APG_LTYPE (line_id, token_id),
-			   	APG_LLOW (line_id, token_id), 
-				(int)strlen (pp),
-			   	APG_LHIGH (line_id, token_id)))
+	if (!( APG_LLOW  (line_id, token_id)  ||
+	       APG_LHIGH (line_id, token_id)) ||
+	       APG_CLIMIT( APG_LTYPE (line_id, token_id),
+			   APG_LLOW (line_id, token_id), 
+		      (int)strlen (pp),
+			   APG_LHIGH (line_id, token_id)))
 	  {
 	    APG_PPUSH (apg_stream, offset, pp);
 	    return;
@@ -821,11 +825,15 @@ token_analysis (AACHARx_ARG token, AAINT_ARG line_id, AAINT_ARG token_id)
 #line 1036 "/usr/local/share/apg/apg.db"
     case T_HOST:
       {
-	register int state = APG_HDOT;
-	register int t_counter = 1;
-	char *_p = (char *) token;
+	register int state;
+	register int t_counter;
+	char *_p;
 
-	while (*_p)
+        state     = APG_HDOT;
+        t_counter = 1;
+        _p        = (char *) token;
+
+	while (*_p != '\0')
 	  {
 	    switch (*_p)
 	      {
@@ -853,9 +861,8 @@ token_analysis (AACHARx_ARG token, AAINT_ARG line_id, AAINT_ARG token_id)
 
 	  }
 
-	if (*_p || state & (APG_HERR | APG_HDOT | APG_HMIN) ||
-	    ~state & APG_H2LD || (state & APG_HALPHA
-				  && ~state & APG_HL_ALPHA))
+	if ( *_p != '\0' || state & (APG_HERR | APG_HDOT | APG_HMIN) ||
+	     ~state & APG_H2LD || (state & APG_HALPHA && ~state & APG_HL_ALPHA))
 	  {
 	    token_fatalerr (APGE_ARG4);
 	    return;
@@ -869,15 +876,18 @@ token_analysis (AACHARx_ARG token, AAINT_ARG line_id, AAINT_ARG token_id)
 	  }
 
       }
-#line 1087 "/usr/local/share/apg/apg.db"
+#line 1090 "/usr/local/share/apg/apg.db"
     case T_IPV4:
       {
-	register int state = APG_HDOT;
-	register int t_counter = 1;
-	register int t_byte = 0;
-	char *_p = (char *) token;
+	register int state, t_counter, t_byte;
+	char *_p;
 
-	while (*_p)
+        state     = APG_HDOT;
+	t_counter = 1;
+	t_byte    = 0;
+	_p        = (char *) token;
+
+	while (*_p != '\0')
 	  {
 	    switch (*_p)
 	      {
@@ -905,7 +915,7 @@ token_analysis (AACHARx_ARG token, AAINT_ARG line_id, AAINT_ARG token_id)
 
 	  }
 
-	if (*_p || state & (APG_HERR | APG_HDOT) || t_counter != 4)
+	if (*_p != '\0' || state & (APG_HERR | APG_HDOT) || t_counter != 4)
 	  {
 	    token_fatalerr (APGE_ARG5);
 	    return;
@@ -921,14 +931,14 @@ token_analysis (AACHARx_ARG token, AAINT_ARG line_id, AAINT_ARG token_id)
       }
 
       break;
-#line 1139 "/usr/local/share/apg/apg.db"
+#line 1145 "/usr/local/share/apg/apg.db"
     }
   return;
 }
 
 /* error api */
 
-#line 1144 "/usr/local/share/apg/apg.db"
+#line 1150 "/usr/local/share/apg/apg.db"
 static char *err_table[] = {
   "apg: ok",
   "apg: grill arena is empty",
@@ -941,10 +951,13 @@ apg_strerror (AAINT_ARG errnum)
      AAINT_DECL(errnum)
 {
   static char *sb;
-  int i = errnum;
+  int i;
+
+  i = errnum;
 
   if (errnum < 1 || errnum > APG_MAXERR)
     i = 0;
+
   sb = (char *) xrealloc (sb, strlen (err_table[i]) + 1);
   strcpy (sb, err_table[i]);
 
@@ -954,7 +967,7 @@ apg_strerror (AAINT_ARG errnum)
 
 /* standard api */
 
-#line 1168 "/usr/local/share/apg/apg.db"
+#line 1177 "/usr/local/share/apg/apg.db"
 void
 apg_free_grill (AAGRILLx_ARG p)
      AAGRILLx_DECL (p)
@@ -976,9 +989,11 @@ apg_free_grill (AAGRILLx_ARG p)
 void
 apg_free_pragma ()
 {
-  register seg_t *p = head_seg, *q = p;
+  register seg_t *p, *q;
 
-  while ((p = q))
+  q = head_seg;
+
+  while ((p = q)) /* its not a BUG */
     {
       if (p->ptr)
 	free (p->ptr);
@@ -986,6 +1001,7 @@ apg_free_pragma ()
       free (p);
     }
   head_seg = NULL;
+
 }
 
 
@@ -1016,7 +1032,7 @@ apg_get_line (AAGRILLxx_ARG apg_user_ptr)
 
   /* check if apg_stream != NULL */
 
-  if (apg_stream && (*apg_user_ptr = apg_stream = apg_stream->next))
+  if (apg_stream != NULL && (*apg_user_ptr = apg_stream = apg_stream->next))
     return apg_stream->type_line;
   else
     {
@@ -1028,7 +1044,7 @@ apg_get_line (AAGRILLxx_ARG apg_user_ptr)
 
 /* parser */
 
-#line 1284 "/usr/local/share/apg/apg.db"
+#line 1296 "/usr/local/share/apg/apg.db"
 grill_t *
 #if __STDC__
 apg_parser (int q, ...)
@@ -1038,13 +1054,21 @@ apg_parser (q, va_alist)
 	va_dcl
 #endif
 {
-  register long shift_reg = 0;
-  register int i = q, j = 0;
+  register long shift_reg;
+  register int i, j;
 
   va_list ap;
-  char *b_stream = NULL, *tk = NULL;
-  char *file;
-#line 1305 "/usr/local/share/apg/apg.db"
+
+  char *b_stream, *tk, *file;
+
+  shift_reg = 0;
+  i         = q;
+  j         = 0;
+ 
+  b_stream = NULL;
+  tk       = NULL;
+
+#line 1325 "/usr/local/share/apg/apg.db"
 
 #if __STDC__
   va_start (ap, q);
@@ -1140,21 +1164,20 @@ apg_parser (q, va_alist)
 
 /* man rep */
 
-#line 1399 "/usr/local/share/apg/apg.db"
+#line 1419 "/usr/local/share/apg/apg.db"
 	  rep_counter[apg_stream->type_line]++;
 
 	  if (rep_limits[apg_stream->type_line][1] != -1 &&
-	      rep_counter[apg_stream->type_line] >
-	      rep_limits[apg_stream->type_line][1])
+	      rep_counter[apg_stream->type_line] > rep_limits[apg_stream->type_line][1] )
 	    token_fatalerr (APGE_ARG7);
 
-#line 1407 "/usr/local/share/apg/apg.db"
+#line 1426 "/usr/local/share/apg/apg.db"
 	  break;
 	default:		/* token */
 
 	  /* shift_reg setup: (apg_token == 1 ? line_id : token_id) */
 
-	  if (*tk)
+	  if (*tk != '\0')
 	    shift_reg |= 1 << (apg_token - 1);
 
 	  token_analysis (tk, apg_stream->type_line, apg_token - 1);
@@ -1173,7 +1196,7 @@ apg_parser (q, va_alist)
 
 /* min rep */
 
-#line 1430 "/usr/local/share/apg/apg.db"
+#line 1449 "/usr/local/share/apg/apg.db"
   {
     register int i = 1;
     for (; i <= QMAX_ELEM; i++)
@@ -1181,7 +1204,7 @@ apg_parser (q, va_alist)
 	token_fatalerr (APGE_ARG8);
   }
 
-#line 1438 "/usr/local/share/apg/apg.db"
+#line 1457 "/usr/local/share/apg/apg.db"
   free (base_tokens);
   ioctl_buffer (NULL, APG_CLOSE);
 
@@ -1190,7 +1213,7 @@ apg_parser (q, va_alist)
   if (apg_flags & APG_FATALERR)
     fatalerr ("apg_parser(): encontered some errors");
 
-#line 1467 "/usr/local/share/apg/apg.db"
+#line 1489 "/usr/local/share/apg/apg.db"
 
   return apg_arena;
 

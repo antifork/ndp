@@ -28,17 +28,22 @@
 extern Channel *channel_ptr;
 extern struct timeval mytime;
 
-int diff_time (long, long);
-void rehash_time (void);
+/* prototypes */
+
+int diff_time 		__P((long, long));
+void rehash_time 	__P((void));
+
 
 int
-diff_time (long now, long old)
+diff_time (now, old)
+   long now;
+   long old;
 {
   return ((now - old) > 0 ? (now - old) : (0));
 }
 
 void
-rehash_time (void)
+rehash_time ()
 {
 /* rehash mytime: sec/usec or sec/0 due to the presence of GETTIMEOFDAY or less */
 

@@ -21,7 +21,6 @@
  */
 
 
-#define Warning(msg,par,file)   { fprintf(stderr,msg,par,file); exit(-1); }
 #define Isdigit(x)              ( (atoi(x)) > 0 ? (1) : (0) )
 
 /*

@@ -29,9 +29,11 @@ extern ndpControl ndp;
 #ifndef HAVE_STRCASECMP
 
 int
-strcasecmp (char *a, char *b)
+strcasecmp (a, b)
+   char *a;
+   char *b;
 {
-  while ((tolower (*a) == tolower (*b)) && (*a) && (*b))
+  while ((tolower (*a) == tolower (*b)) && (*a != '\0') && (*b != '\0'))
     {
       a++;
       b++;
@@ -43,12 +45,14 @@ strcasecmp (char *a, char *b)
 #endif
 
 char *
-ndp_strstr (char *a, char *b)
+ndp_strstr (a, b)
+   char *a;
+   char *b;
 {
 
   register char *orig = b;
 
-  while (*a && *b)
+  while (*a != '\0' && *b != '\0' )
     {
       if (tolower (*a) == tolower (*b))
 	{
@@ -65,7 +69,7 @@ ndp_strstr (char *a, char *b)
 
     }
 
-  if (!*b)
+  if (*b == '\0')
     return (char *) (a - strlen (orig));
   else
     return (char *) NULL;
@@ -73,7 +77,8 @@ ndp_strstr (char *a, char *b)
 }
 
 int
-auth_user (char *pass)
+auth_user (pass)
+   char *pass;
 {
 
   if (!strcmp (pass, ndp.pass.master))
@@ -92,7 +97,9 @@ auth_user (char *pass)
 }
 
 void
-md5_printable (unsigned char *key, unsigned char *p)
+md5_printable (key, p)
+	unsigned char *key;
+	unsigned char *p;
 {
   unsigned char st[3];
   register int i, j;
@@ -112,7 +119,8 @@ md5_printable (unsigned char *key, unsigned char *p)
 }
 
 int
-checkpass (unsigned char *a)
+checkpass (a)
+	unsigned char *a;
 {
   struct md5_ctx hash;
   char md5[17];			/* 16+1 */

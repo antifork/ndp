@@ -24,14 +24,15 @@
 extern char sep;
 
 int
-parse_input (char *input, long *host, unsigned short *port)
+parse_input (input, host, port)
+   char *input;
+   long *host;
+   unsigned short *port;
 {
   register char *ptr;
 
   *host = 0;
   *port = 0;
-
-
 
   while ((*(input) == 0x20))
     input++;
@@ -46,7 +47,9 @@ parse_input (char *input, long *host, unsigned short *port)
 
   if (strcasecmp (input, "all"))
     {
-      if (!(*host = gethostbyname_lru (input)))
+      *host = gethostbyname_lru (input);
+
+      if ( *host == 0 )
 	return -1;
     }
 
@@ -57,22 +60,22 @@ parse_input (char *input, long *host, unsigned short *port)
 
 
   return 0;
-
-
 }
 
 #define	CR_LF_COOKIES	0x01
 
 int
-parse_irc (char *buff, char **argz)
+parse_irc (buff, argz)
+   char *buff;
+   char **argz;
 {
   register short int i = 0;
   register short int j = 0;
 
   short int out = 0;
 
-
   argz[i++] = buff;
+
   while (*buff && (i < _MAXARGLINE_ - 1))
     {
 
@@ -113,7 +116,9 @@ parse_irc (char *buff, char **argz)
 }
 
 int
-parse_conf (char *input, char **argz)
+parse_conf (input, argz)
+   char *input;
+   char **argz;
 {
   register short i = 0, cookies = 0, out = 0;
 

@@ -20,7 +20,7 @@
 #
 
 CC = @CC@
-CFLAGS = @CFLAGS@ -I../include  # -include /usr/include/almepro.h 
+CFLAGS = @CFLAGS@ -I../include # -include /usr/include/almepro.h 
 LIBS = @LIBS@ # -lalmepro
 
 OBJS = ndp.o socket.o util.o md5.o irc.o passwd.o \
@@ -32,7 +32,6 @@ OBJS2 = md5.o passwd_gen.o
 all:ndp md5
 .c.o:
 	$(CC) $(CFLAGS) -c $< -o $@
-
 ndp:$(OBJS)
 	$(CC) -o ../ndp $(OBJS) $(LIBS)
 	@echo "ndp done."

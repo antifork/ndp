@@ -26,7 +26,9 @@
 extern Channel *channel_ptr;
 
 void
-void_cr_lf (u_char * ptr, int mode)
+void_cr_lf (ptr, mode)
+   u_char *ptr;
+   int     mode;
 {
   char *ptr_1, *ptr_2;
 
@@ -58,22 +60,20 @@ void_cr_lf (u_char * ptr, int mode)
       ptr++;
 
     }
-
   return;
-
 }
 
 
 char
-getlastchar (u_char * buff)
+getlastchar (buff)
+    u_char *buff;
 {
   if (buff == NULL)
-    return 0x00;
+    return 0;
 
-  while (*buff != 0x00)
+  while (*buff != '\0')
     {
-      if (*buff == 0x0a)
-	*(buff + 1) = 0x00;
+      if ( *buff == '\n' ) *(buff + 1) = '\0';
       buff++;
     }
 

@@ -24,12 +24,14 @@
 #include <defs.h>
 #include <stdio.h>
 
-/*
- */
-void usage (char *, char *, char *);
+/* prototype */
+void usage 		__P((char *, char *, char *));
 
 void
-usage (char *name, char *VERSION, char *ID)
+usage (name, VERSION, ID)
+	char *name;
+	char *VERSION;
+	char *ID;
 {
   fprintf (stderr, "usage: %s [option]\n", name);
 
