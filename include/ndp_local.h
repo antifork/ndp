@@ -51,7 +51,7 @@ void 	server             	(void);
 void 	_quit              	(int);
 
 void	rehash_time 		(void);
-void	halfshutdown_ 		(void);
+void	halfshutdown_ 		(Channel *);
 void	shutdown_       	(Channel *);
 void	set_nonblock 		(int);
 void	set_block		(int);

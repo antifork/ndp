@@ -53,7 +53,7 @@ accept_client (void)
    * allows to continue as quickly as possible
    */
 
-  struct linger linger_;
+  struct linger linger_= { 0, 0 };
   struct timeval delay = { 0, 100 };
   fd_set r_set;
 
@@ -76,8 +76,6 @@ accept_client (void)
     {
 
       callersize = sizeof (channel_ptr->caller_addr);
-
-      linger_.l_onoff = 0;
 
       channel_ptr->fd_in =
 	accept (fd_in, (struct sockaddr *) &(channel_ptr->caller_addr),
@@ -520,9 +518,7 @@ connect_target (void)
    * allows to continue as quickly as possible
    */
 
-  struct linger linger_;
-
-  linger_.l_onoff = 0;
+  struct linger linger_= { 0, 0 };
 
   connect_out = connect (channel_ptr->fd_out,
 			 (struct sockaddr *) &(channel_ptr->output_addr),
@@ -548,7 +544,7 @@ connect_target (void)
 	}
       else
 	{
-	  halfshutdown_ ();
+	  halfshutdown_ (NULL);
 	  return _SHELL_;
 	}
 
@@ -628,7 +624,7 @@ connect_target (void)
 	}
       else
 	{
-	  halfshutdown_ ();
+	  halfshutdown_ (NULL);
 	  return _SHELL_;
 	}
 
@@ -682,14 +678,13 @@ server (void)
    * allows to continue as quickly as possible
    */
 
-  struct linger linger_;
+  struct linger linger_= { 0, 0 };
 
   int (*state_action[]) (void) =
     { accept_client, ushell, ushell, setup_dialer, connect_target,
     handle_link
   };
 
-  linger_.l_onoff = 0;
 
   first_channel = channel_ptr = (Channel *) malloc (sizeof (Channel));
   reset_chan (channel_ptr);
@@ -806,8 +801,9 @@ _quit (int no)
       switch (ptr->flag)
 	{
 	case _ESTABLISHED_:
-	  shutdown (ptr->fd_in, 2);
+	  shutdown (ptr->fd_in , 2);
 	  shutdown (ptr->fd_out, 2);
+
 	  close (ptr->fd_in);
 	  close (ptr->fd_out);
 
@@ -824,6 +820,7 @@ _quit (int no)
 
   shutdown (fd_in, 2);
   close (fd_in);
+
   fprintf (stderr, "done.\n");
   syslog (LOG_INFO, "killed with HUP signal.");
   exit (0);

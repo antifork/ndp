@@ -1,4 +1,4 @@
-/* apg.db 01/01/21 rel 02 $Id$ */
+/* apg.db 01/02/03 rel 02 $Id$ */
 /*
  *  $Id$
  *  apg.par.c
@@ -176,7 +176,7 @@ static char *
 ioctl_buffer (char *fn, int flag)
 {
   int fd;
-  struct stat lstat;
+  struct stat f_stat;
 
   switch (flag)
     {
@@ -185,15 +185,15 @@ ioctl_buffer (char *fn, int flag)
       file_name = (char *) xmalloc (strlen (fn) + 1);
       strcpy (file_name, fn);
 
-      if (stat (fn, &lstat) == -1)
+      if (stat (fn, &f_stat) == -1)
 	return (char *) NULL;
 
-      file_image = (char *) xrealloc (file_image, lstat.st_size + 1);
+      file_image = (char *) xrealloc (file_image, f_stat.st_size + 1);
 
       if ((fd = open (fn, O_RDONLY)) == -1)
 	fatalerr ("err: %s", strerror (errno));
-      read (fd, file_image, lstat.st_size);
-      *(file_image + lstat.st_size) = 0;
+      read (fd, file_image, f_stat.st_size);
+      *(file_image + f_stat.st_size) = 0;
 
       close (fd);
 
@@ -379,8 +379,6 @@ get_token (void)
   return (char *)jmp_token;
 
 }
-
-
 
 /* arena menagement
 */
@@ -570,7 +568,6 @@ strholen (char *p)
   return c;
 }
 
-
 static char *
 proc_string (char *token, int line_id, int token_id)
 {
@@ -730,21 +727,22 @@ token_analysis (char *token, int line_id, int token_id)
 /* host/ipv4 regmacro
 */
 
-#define R_0_9(x)     ( '0' <= x && x <= '9' )
-#define R_A_Z(x)     ( 'A' <= x && x <= 'Z' )
-#define R_a_z(x)     ( 'a' <= x && x <= 'z' )
-#define R_min(x)     ( x == '-' )
-#define H_TOKEN(x) ( R_0_9(x) || R_A_Z(x) || R_a_z(x) || R_min(x) )
-#define H_ALPHA(x) ( R_A_Z(x) || R_a_z(x) || R_min(x) )
+#define R_0_9(x)      ( '0' <= x && x <= '9' )
+#define R_A_Z(x)      ( 'A' <= x && x <= 'Z' )
+#define R_a_z(x)      ( 'a' <= x && x <= 'z' )
 
-#define h_ALPHA    0x01
-#define h_DOT      0x02
-#define h_ERR      0x04
-#define h_2LD      0x08
-#define h_L_ALPHA  0x10
+#define R_ALPHANUM(x) ( R_0_9(x) || R_A_Z(x) || R_a_z(x) )
+#define R_ALPHA(x)    ( R_A_Z(x) || R_a_z(x) )
+
+#define H_ALPHA    0x01
+#define H_DOT      0x02
+#define H_MIN      0x04
+#define H_ERR      0x08
+#define H_2LD      0x10
+#define H_L_ALPHA  0x20
     case T_HOST:
       {
-        register int state = h_DOT;
+        register int state = H_DOT;
         register int t_counter = 1;
         char *P = (char *) token;
 
@@ -753,18 +751,23 @@ token_analysis (char *token, int line_id, int token_id)
             switch (*P)
               {
               case '.':
-                if (state & h_DOT)
-                  state |= h_ERR;
-                state |= (h_DOT | h_2LD);
-                state &= ~h_L_ALPHA;
+                if (state & (H_DOT | H_MIN))
+                  state |= H_ERR;
+                state |= (H_DOT | H_2LD);
+                state &= ~(H_L_ALPHA | H_MIN);
                 t_counter++;
                 break;
+              case '-':
+                if (state & (H_DOT | H_MIN))
+                  state |= H_ERR;
+                state |= H_MIN;
+                break;
               default:
-                state &= ~h_DOT;
-                if (!H_TOKEN (*P))
-                  state |= h_ERR;
-                if (H_ALPHA (*P))
-                  state |= (h_ALPHA | h_L_ALPHA);
+                state &= ~(H_DOT | H_MIN);
+                if (!R_ALPHANUM (*P))
+                  state |= H_ERR;
+                if (R_ALPHA (*P))
+                  state |= (H_ALPHA | H_L_ALPHA);
                 break;
               }
             P++;
@@ -772,8 +775,8 @@ token_analysis (char *token, int line_id, int token_id)
           }
 
         if (*P ||
-            state & (h_ERR | h_DOT) ||
-            ~state & h_2LD || (state & h_ALPHA && ~state & h_L_ALPHA ) )
+            state & (H_ERR|H_DOT|H_MIN) ||
+            ~state & H_2LD || (state & H_ALPHA && ~state & H_L_ALPHA ) )
           {
             token_fatalerr (line_id, token_id, T_HOST,
                             APG_HOST_ERR, L_LOW (line_id, token_id),
@@ -781,7 +784,7 @@ token_analysis (char *token, int line_id, int token_id)
             return;
           }
 
-        else if (state & h_ALPHA)
+        else if (state & H_ALPHA)
           {
             strcpy (pp, token);
             P_PUSH (apg_stream, offset, pp);
@@ -791,7 +794,7 @@ token_analysis (char *token, int line_id, int token_id)
       }
     case T_IPV4:
       {
-        register int state = h_DOT;
+        register int state = H_DOT;
         register int t_counter = 1;
         register int t_byte = 0;
         char *P = (char *) token;
@@ -801,30 +804,30 @@ token_analysis (char *token, int line_id, int token_id)
             switch (*P)
               {
               case '.':
-                if (state & h_DOT)
-                  state |= h_ERR;
-                state |= h_DOT;
+                if (state & H_DOT)
+                  state |= H_ERR;
+                state |= H_DOT;
                 t_counter++;
                 t_byte = 0;
                 break;
               default:
-                state &= ~h_DOT;
+                state &= ~H_DOT;
                 if (!R_0_9 (*P))
-                  state |= h_ERR;
+                  state |= H_ERR;
 
 		/* t_byte = t_byte * 10 + val(*P) */
 
                 t_byte = (t_byte<<3) + (t_byte<<1) + (*P - '0');
 
                 if (t_byte & 0xffffff00)
-                  state |= h_ERR;
+                  state |= H_ERR;
                 break;
               }
             P++;
 
           }
 
-        if (*P || state & (h_ERR|h_DOT) || t_counter != 4)
+        if (*P || state & (H_ERR|H_DOT) || t_counter != 4)
           {
             token_fatalerr (line_id, token_id, T_IPV4,
                             APG_IPV4_ERR, L_LOW (line_id, token_id),

@@ -62,17 +62,9 @@ create_dialer_sock (Channel * ptr, long vhost, long rhost, int rport)
   /* SO_LINGER the system will process the close in a manner
      * that allows to continue as quickly as possible */
 
-  struct linger linger_;
-  register int k = 0;
+  struct linger linger_ = { 0, 0 };
 
-  linger_.l_onoff = 0;
-
-
-  while ((k++ < 10)
-	 && ((ptr->fd_out = socket (AF_INET, SOCK_STREAM, 0)) == -1))
-    usleep (1000);
-
-  if (ptr->fd_out == -1)
+  if ((ptr->fd_out = socket (AF_INET, SOCK_STREAM, 0)) == -1)
     {
       if (ndp.log_level)
 	syslog (LOG_ERR, "Cannot create a socket:%s", strerror (errno));
@@ -111,25 +103,48 @@ create_dialer_sock (Channel * ptr, long vhost, long rhost, int rport)
 }
 
 void
-halfshutdown_ (void)
+shutdown_ (Channel * parg)
 {
-  struct linger linger_;
-  register int k = 0;
 
-  if (channel_ptr->fd_out)
+  register Channel *ptr;
+
+  ptr = ((parg == NULL) ? (channel_ptr) : (parg));
+
+  if (ptr->fd_out > 2)
+    {
+      shutdown (ptr->fd_out, 2);
+      close (ptr->fd_out);
+    }
+
+  if (ptr->fd_in > 2)
+    {
+      shutdown (ptr->fd_in, 2);
+      close (ptr->fd_in);
+    }
+
+  if (ptr->buff_tmp)
+    free (ptr->buff_tmp);
+
+  reset_chan (ptr);
+
+  return;
+}
+
+void
+halfshutdown_ (Channel * parg)
+{
+  struct linger linger_ = { 0, 0 };
+  register Channel *ptr;
+
+  ptr = ((parg == NULL) ? (channel_ptr) : (parg));
+
+  if (ptr->fd_out > 2)
     {
 
-      close (channel_ptr->fd_out);
+      shutdown (ptr->fd_out, 2);
+      close (ptr->fd_out);
 
-      linger_.l_onoff = 0;
-
-
-      while ((k++ < 10)
-	     && ((channel_ptr->fd_out = socket (AF_INET, SOCK_STREAM, 0)) ==
-		 -1))
-	usleep (1000);
-
-      if (channel_ptr->fd_out == -1)
+      if ((ptr->fd_out = socket (AF_INET, SOCK_STREAM, 0)) == -1)
 	{
 	  if (ndp.log_level)
 	    syslog (LOG_ERR, "Cannot create a socket:%s", strerror (errno));
@@ -137,35 +152,10 @@ halfshutdown_ (void)
 	  return;
 	}
 
-      setsockopt (channel_ptr->fd_out,
-		  SOL_SOCKET, SO_LINGER, (char *) &linger_, sizeof (linger_));
+      setsockopt (ptr->fd_out, SOL_SOCKET, SO_LINGER, (char *) &linger_,
+		  sizeof (linger_));
 
     }
-
-  return;
-}
-
-
-void
-shutdown_ (Channel * parg)
-{
-
-  register Channel *ptr;
-
-  if (parg == NULL)
-    ptr = channel_ptr;
-  else
-    ptr = parg;
-
-  if (ptr->fd_out > 0)
-    close (ptr->fd_out);
-  if (ptr->fd_in > 0)
-    close (ptr->fd_in);
-
-  if (ptr->buff_tmp)
-    free (ptr->buff_tmp);
-
-  reset_chan (ptr);
 
   return;
 }

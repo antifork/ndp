@@ -32,7 +32,7 @@
 
 void    set_nonblock    	(int );
 void    set_block       	(int );
-void    halfshutdown_   	(void);
+void    halfshutdown_   	(Channel *);
 void    shutdown_       	(Channel *);
 int     read_from_channel       (int , char *);
 int     write_to_channel        (int , char *, int);
