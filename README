@@ -5,7 +5,7 @@
 tested environments:
 
 -(Linux libc[56] glibc[12]
--(OpenBSD 2.[567]
+-(OpenBSD 2.[5-9]
 -(FreeBSD 3.3.x FreeBSD 4
 -(NetBSD ?
  
