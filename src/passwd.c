@@ -76,15 +76,15 @@ int
 auth_user (char *pass)
 {
 
-  if (!strcmp (pass, ndp.pass.M))
+  if (!strcmp (pass, ndp.pass.master))
     return CL_MASTER;
-  else if (!strcmp (pass, ndp.pass.U))
+  else if (!strcmp (pass, ndp.pass.user))
     return CL_USER;
-  else if (!strcmp (pass, ndp.pass.I))
+  else if (!strcmp (pass, ndp.pass.ircer0))
     return CL_IRC1;
-  else if (!strcmp (pass, ndp.pass.i))
+  else if (!strcmp (pass, ndp.pass.ircer1))
     return CL_IRC2;
-  else if (!strcmp (pass, ndp.pass.j))
+  else if (!strcmp (pass, ndp.pass.ircer2))
     return CL_IRC3;
   else
     return CL_UNKNOWN;

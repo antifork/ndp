@@ -48,28 +48,28 @@ typedef struct _channel_ {
 
 typedef struct _ndp_conf_ {
 	struct {
-		unsigned short  T;
-		unsigned short  t;
-		unsigned short  c;
-		unsigned short  n;
-		unsigned short  e;
+		unsigned short  idle;
+		unsigned short  idlep;
+		unsigned short  maxuser;
+		unsigned short  maxerr;
 		unsigned short  lp_irc;
 		unsigned short  hp_irc;
 
 	} conf;
+
 	struct {
-		unsigned char   M[41];
-		unsigned char   U[41];
-		unsigned char   I[41];
-		unsigned char   i[41];
-		unsigned char   j[41];
+		unsigned char* master;
+		unsigned char* user;
+		unsigned char* ircer0;
+		unsigned char* ircer1;
+		unsigned char* ircer2;
 	} pass;
 
-	char            lhost[80];
-	char            vhost[80];
-	char            rhost[80];
-	char		ivhost[80];
-	char		jvhost[80];
+	char            *lhost;
+	char            *vhost;
+	char            *rhost;
+	char		*ivhost;
+	char		*jvhost;
 
 	unsigned long   lhost_4b;
 	unsigned long   vhost_4b;

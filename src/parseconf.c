@@ -45,53 +45,46 @@ parseconf (char *config)
 
       case if_label:
 
-	strncpy (ndp.lhost, ptr->if_ip, 79);
+        ndp.lhost= ptr->if_ip;
 
-	if (!strcasecmp (ptr->if_ip, "ALL"))
+	if (ptr->if_ip)
 	  ndp.lhost_4b = getlongbyname (ndp.lhost);
 
 	ndp.lport = ptr->if_port;
 
 	if (ptr->if_vhost != NULL)
 	  {
-	    strncpy (ndp.vhost, ptr->if_vhost, 79);
+            ndp.vhost= ptr->if_vhost;
 	    ndp.vhost_4b = getlongbyname (ndp.vhost);
 	  }
 	break;
       case feature_label:
-	ndp.conf.T = ptr->feature_idle;
-	ndp.conf.t = ptr->feature_idlep;
-	ndp.conf.n = ptr->feature_maxuser;
-	ndp.conf.e = ptr->feature_maxerr;
+	ndp.conf.idle    = ptr->feature_idle;
+	ndp.conf.idlep   = ptr->feature_idlep;
+	ndp.conf.maxuser = ptr->feature_maxuser;
+	ndp.conf.maxerr  = ptr->feature_maxerr;
 	break;
       case master_label:
-	strncpy ((unsigned char *) ndp.pass.M,
-		 (unsigned char *) ptr->master_passwd, 40);
+	ndp.pass.master  = ptr->master_passwd;
 	break;
       case user_label:
-	strncpy ((unsigned char *) ndp.pass.U,
-		 (unsigned char *) ptr->user_passwd, 40);
+	ndp.pass.user    = ptr->user_passwd;
 	break;
       case ircer0_label:
-	strncpy ((unsigned char *) ndp.pass.I,
-		 (unsigned char *) ptr->ircer0_passwd, 40);
+	ndp.pass.ircer0  = ptr->ircer0_passwd;
 	break;
       case ircer1_label:
-	strncpy ((unsigned char *) ndp.pass.i,
-		 (unsigned char *) ptr->ircer1_passwd, 40);
-	strncpy ((unsigned char *) ndp.ivhost,
-		 (unsigned char *) ptr->ircer1_vhost, 79);
+	ndp.pass.ircer1  = ptr->ircer1_passwd;
+	ndp.ivhost       = ptr->ircer1_vhost;
 	break;
       case ircer2_label:
-	strncpy ((unsigned char *) ndp.pass.j,
-		 (unsigned char *) ptr->ircer2_passwd, 40);
-	strncpy ((unsigned char *) ndp.jvhost,
-		 (unsigned char *) ptr->ircer2_vhost, 79);
-	strncpy ((unsigned char *) ndp.rhost,
-		 (unsigned char *) ptr->ircer2_lhost, 79);
-	ndp.jvhost_4b = getlongbyname (ndp.jvhost);
-	ndp.rhost_4b = getlongbyname (ndp.rhost);
-	ndp.rport = ptr->ircer2_port;
+        ndp.pass.ircer2  = ptr->ircer2_passwd;
+        ndp.jvhost       = ptr->ircer2_vhost;
+	ndp.rhost        = ptr->ircer2_lhost;
+
+	ndp.jvhost_4b    = getlongbyname (ndp.jvhost);
+	ndp.rhost_4b     = getlongbyname (ndp.rhost);
+	ndp.rport        = ptr->ircer2_port;
 	break;
       case oport_label:
 	ndp.conf.lp_irc = ptr->oport_low;
@@ -106,6 +99,5 @@ parseconf (char *config)
       }
 
   apg_free_grill (ptr);
-  apg_free_pragma ();
 
 }

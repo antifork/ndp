@@ -278,7 +278,7 @@ c_who (int _argc, char **_argv, char *null)
       ptr = ptr->next;
     }
 
-  send_msg (NULL, "users %d of %d, total fds:%d\n", ct - 1, ndp.conf.n, tfd);
+  send_msg (NULL, "users %d of %d, total fds:%d\n", ct - 1, ndp.conf.maxuser, tfd);
 
   return 1;
 

@@ -1,4 +1,4 @@
-
+/* apg.db 01/01/21 rel 02 $Id$ */
 /* 
  *  $Id$
  *  apg.tab.h
@@ -29,7 +29,7 @@
 #ifndef _APG_TAB_H
 #define _APG_TAB_H
 
-#ifndef APG_PARSER_C
+#ifndef _APG_PARSER_C
 extern int apg_errno;
 #endif
 
@@ -49,6 +49,7 @@ extern int apg_errno;
 #define ircer1_label	6
 #define ircer2_label	7
 #define oport_label	8
+
 
 typedef struct __type_line__ {
   int	type_line;
@@ -92,6 +93,7 @@ typedef struct __type_line__ {
 } grill_t;
 
 
+
 #define if_ip		line_dun.if_line.ip
 #define if_port		line_dun.if_line.port
 #define if_vhost		line_dun.if_line.vhost
@@ -110,26 +112,28 @@ typedef struct __type_line__ {
 #define ircer2_port		line_dun.ircer2_line.port
 #define oport_low		line_dun.oport_line.low
 #define oport_high		line_dun.oport_line.high
+
 /* prototypes
 */
 
-char *apg_strerror (int);
-grill_t *apg_parser (int, ...);
-int apg_get_line (grill_t **);
-void apg_free_grill (grill_t *);
-void apg_free_pragma ();
+/* Use prototypes unless the compiler is old-fashioned.  */
 
-/* private header
+#ifdef __STDC__
+#define P(x) x
+#else
+#define P(x) ()
+#endif
+
+char    *apg_strerror   P((int));
+grill_t *apg_parser     P((int, ...));
+int     apg_get_line    P((grill_t **));
+void    apg_free_grill  P((grill_t *));
+void    apg_free_pragma P((void));
+
+/* parser header side
 */
 
-#ifdef APG_PARSER_C
-
-#define  SIZEOF_INT     sizeof(int)
-#define  SIZEOF_SHORT   sizeof(short)
-#define  SIZEOF_CHAR    sizeof(char)
-#define  SIZEOF_LONG    sizeof(long)
-#define  SIZEOF_VOID_P  sizeof(void *)
-
+#ifdef _APG_PARSER_C
 /* includes
 */
 
@@ -169,9 +173,9 @@ void apg_free_pragma ();
 */
 
 static const int types_size[] =
-  { 0, SIZEOF_INT, SIZEOF_SHORT, SIZEOF_CHAR,
-  SIZEOF_LONG, SIZEOF_SHORT, SIZEOF_CHAR, SIZEOF_VOID_P, SIZEOF_VOID_P,
-  SIZEOF_VOID_P
+  { 0, sizeof(int), sizeof(short), sizeof(char),
+  sizeof(long), sizeof(short), sizeof(char), sizeof(void *), sizeof(void *),
+  sizeof(void *) 
 };
 
 /* apg type id
@@ -186,59 +190,60 @@ static const char *const types_id[] =
 /* apg table
 */
 
-#define MAXTOK 5
-static const int apgtb[][5][4] = {
-         0,          0,          0,          0,
-         0,          0,          0,          0,
-         0,          0,          0,          0,
-         0,          0,          0,          0,
-         0,          0,          0,          0,
-         0,          0,          0,          0,
-         7,          1,         -1,          0,
-         2,     -32768,      32767,          0,
-         8,          0,        255,          0,
-         0,          0,          0,          0,
-         0,          0,          0,          0,
-         1,          0,    1000000,          0,
-         1,          0,     100000,          0,
-         1,          0,        100,          0,
-         1,          0,        100,          0,
-         0,          0,          0,          0,
-         7,          1,         -1,          0,
-         0,          0,          0,          0,
-         0,          0,          0,          0,
-         0,          0,          0,          0,
-         0,          0,          0,          0,
-         7,          1,         -1,          0,
-         0,          0,          0,          0,
-         0,          0,          0,          0,
-         0,          0,          0,          0,
-         0,          0,          0,          0,
-         7,          1,         -1,          0,
-         0,          0,          0,          0,
-         0,          0,          0,          0,
-         0,          0,          0,          0,
-         0,          0,          0,          0,
-         7,          1,         -1,          0,
-         8,          1,        255,          0,
-         0,          0,          0,          0,
-         0,          0,          0,          0,
-         0,          0,          0,          0,
-         7,          1,         -1,          0,
-         8,          1,        255,          0,
-         8,          1,        255,          0,
-         2,     -32768,      32767,          0,
-         0,          0,          0,          0,
-         2,     -32768,      32767,          0,
-         2,     -32768,      32767,          0,
-         0,          0,          0,          0,
-         0,          0,          0,          0,
+#define APG_MAXARG 5
+static const int apgtb[][5][5] = {
+         0,          0,          0,          0,          0,
+         0,          0,          0,          0,          0,
+         0,          0,          0,          0,          0,
+         0,          0,          0,          0,          0,
+         0,          0,          0,          0,          0,
+         0,          0,          0,          0,          0,
+         8,          0,        255,          0,          0,
+         2,     -32768,      32767,          1,          0,
+         8,          0,        255,          0,          0,
+         0,          0,          0,          0,          0,
+         0,          0,          0,          0,          0,
+         1,          0,    1000000,          0,          0,
+         1,          0,     100000,          0,          0,
+         1,          0,        100,          0,          0,
+         1,          0,        100,          0,          0,
+         0,          0,          0,          0,          0,
+         7,          0,          0,          1,          0,
+         0,          0,          0,          0,          0,
+         0,          0,          0,          0,          0,
+         0,          0,          0,          0,          0,
+         0,          0,          0,          0,          0,
+         7,          0,          0,          1,          0,
+         0,          0,          0,          0,          0,
+         0,          0,          0,          0,          0,
+         0,          0,          0,          0,          0,
+         0,          0,          0,          0,          0,
+         7,          0,          0,          1,          0,
+         0,          0,          0,          0,          0,
+         0,          0,          0,          0,          0,
+         0,          0,          0,          0,          0,
+         0,          0,          0,          0,          0,
+         7,          0,          0,          1,          0,
+         8,          0,        255,          1,          0,
+         0,          0,          0,          0,          0,
+         0,          0,          0,          0,          0,
+         0,          0,          0,          0,          0,
+         7,          0,          0,          1,          0,
+         8,          0,        255,          1,          0,
+         8,          0,        255,          1,          0,
+         2,     -32768,      32767,          0,          0,
+         0,          0,          0,          0,          0,
+         2,     -32768,      32767,          0,          0,
+         2,     -32768,      32767,          0,          0,
+         0,          0,          0,          0,          0,
+         0,          0,          0,          0,          0,
 };
+
 
 /* apg offset
 */
 
-static int apg_offset[][MAXTOK]={
+static int apg_offset[][APG_MAXARG]={
 -1, -1, -1, -1, -1, 
 -1, 0, 4, 6, -1, 
 -1, 0, 4, 8, 12, 
@@ -260,19 +265,26 @@ static const char * const line_list[] = { NULL, "if", "feature", "master", "user
 /* rep limits
 */
 
-static unsigned long long  rep_limits[][2] = { {0,0},
+static unsigned long rep_limits[][2] = { {0,0},
 {     1,     1 },
 {     1,     1 },
-{     1,    -1 },
-{    -1,    -1 },
-{    -1,    -1 },
-{    -1,    -1 },
-{    -1,    -1 },
-{    -1,    -1 },
+{     1,     1 },
+{    -1,     1 },
+{    -1,     1 },
+{    -1,     1 },
+{    -1,     1 },
+{    -1,     1 },
 };
 
-static unsigned long long rep_counter[] ={
+static unsigned long rep_counter[] ={
  0, 0, 0, 0, 0, 0, 0, 0, 0 };
+
+/* custom delimiters
+*/
+
+#define APG_SEPLINE  '='
+#define APG_SEPTOKEN ':'
+
 /* seg_t
 */
 
@@ -283,7 +295,6 @@ typedef struct i_seg_t
 
 }
 seg_t;
-
-#endif
-#endif
+#endif /* _APG_PARSER_C */
+#endif /* _APG_TAB_H */
 

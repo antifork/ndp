@@ -73,7 +73,7 @@ accept_client (void)
     }
 
 
-  if (Nchannel < (ndp.conf.n + 1))
+  if (Nchannel < (ndp.conf.maxuser + 1))
     {
 
       callersize = sizeof (channel_ptr->caller_addr);
@@ -145,7 +145,7 @@ ushell (void)
     }
   /* Check MAXUSER exception */
 
-  if ((channel_ptr->flag & _SHELL_) && (Nchannel > (ndp.conf.n + 1))
+  if ((channel_ptr->flag & _SHELL_) && (Nchannel > (ndp.conf.maxuser + 1))
       && !(channel_ptr->class & CL_MASTER))
     {
       send_msg (NULL, MSG_MAXUSER_);
@@ -155,7 +155,7 @@ ushell (void)
     }
   /* Check MAXTRIAL exception */
 
-  if ((channel_ptr->trial >= ndp.conf.e) && (channel_ptr->flag & _LOGIN_))
+  if ((channel_ptr->trial >= ndp.conf.maxerr) && (channel_ptr->flag & _LOGIN_))
     {
       send_msg (NULL, MSG_MAXTRIAL_);
 
@@ -285,7 +285,7 @@ ushell (void)
   delay.tv_usec = 0;
 #endif
 
-  if (diff_time (delay.tv_sec, channel_ptr->sec) > ndp.conf.t)
+  if (diff_time (delay.tv_sec, channel_ptr->sec) > ndp.conf.idlep)
     {
       send_msg (NULL, MSG_IDLE_);
       shutdown_ (NULL);
@@ -463,7 +463,7 @@ handle_link (void)
   delay.tv_sec = time (NULL);
   delay.tv_usec = 0;
 #endif
-  if (diff_time (delay.tv_sec, channel_ptr->sec) > ndp.conf.T)
+  if (diff_time (delay.tv_sec, channel_ptr->sec) > ndp.conf.idle)
     {
       send_msg (NULL, MSG_IDLE_);
       shutdown_ (NULL);
@@ -847,13 +847,13 @@ main (int argc, char *argv[])
   memset (CONF, 0, sizeof (CONF));
   memset (&ndp, 0, sizeof (ndp));
 
-  ndp.opts |= OPT_AUTO_;
-  ndp.conf.T = _TIMEOUT_;
-  ndp.conf.t = _PASSTIMEOUT_;
-  ndp.conf.n = _MAXUSER_;
-  ndp.conf.e = _MAXERRONPASS_;
-  ndp.conf.c = _TIMEOUTCONN_;
-  ndp.log_level = 2;
+  ndp.opts        |= OPT_AUTO_;
+  ndp.conf.idle    = _TIMEOUT_;
+  ndp.conf.idlep   = _PASSTIMEOUT_;
+  ndp.conf.maxuser = _MAXUSER_;
+  ndp.conf.maxerr  = _MAXERRONPASS_;
+
+  ndp.log_level    = 2;
 
   exec_name = argv[0];
 
@@ -1003,11 +1003,11 @@ main (int argc, char *argv[])
       fprintf (stderr, "\n--(%s on %s\n--(%s %s\n\n", VERSION, CPU_MFR_OPSYS,
 	       ID, MAIL_SUPPORT);
       fprintf (stderr, "Server            : %s:%d\n",
-	       (*ndp.lhost ? ndp.lhost : "INADDR_ANY"), ndp.lport);
+	       (ndp.lhost ? ndp.lhost : "INADDR_ANY"), ndp.lport);
       fprintf (stderr, "Vhost             : %s\n",
-	       (*ndp.vhost ? ndp.vhost : getenv ("HOSTNAME")));
+	       (ndp.vhost ? ndp.vhost : getenv ("HOSTNAME")));
       fprintf (stderr, "Target            : %s:%d\n",
-	       (*ndp.rhost ? ndp.rhost : "INTERACTIVE"), ndp.rport);
+	       (ndp.rhost ? ndp.rhost : "INTERACTIVE"), ndp.rport);
       fprintf (stderr, "Password          : %s\n",
 	       ((ndp.opts & OPT_CONF_) ? "on" : "off"));
 
@@ -1017,18 +1017,18 @@ main (int argc, char *argv[])
 	fprintf (stderr, "Stream-type       : %s\n",
 		 ((ndp.opts & OPT_LINE_) ? "line" : "char"));
 
-      fprintf (stderr, "Idle-time         : %d\n", ndp.conf.T);
+      fprintf (stderr, "Idle-time         : %d\n", ndp.conf.idle);
       if (ndp.opts & OPT_CONF_)
 	{
-	  fprintf (stderr, "pass-idle         : %d\n", ndp.conf.t);
-	  fprintf (stderr, "Maxuser           : %d\n", ndp.conf.n);
-	  fprintf (stderr, "masstrial pass    : %d\n", ndp.conf.e);
+	  fprintf (stderr, "pass-idle         : %d\n", ndp.conf.idlep);
+	  fprintf (stderr, "Maxuser           : %d\n", ndp.conf.maxuser);
+	  fprintf (stderr, "masstrial pass    : %d\n", ndp.conf.maxerr);
 	  fprintf (stderr, "Classes loaded    : %s%s%s%s%s\n",
-		   ((*ndp.pass.M) ? "master " : ""),
-		   ((*ndp.pass.U) ? "user " : ""),
-		   ((*ndp.pass.I) ? "ircer+ " : ""),
-		   ((*ndp.pass.i) ? "ircer " : ""),
-		   ((*ndp.pass.j) ? "ircer- " : ""));
+		   ((ndp.pass.master) ? "master " : ""),
+		   ((ndp.pass.user  ) ? "user " : ""),
+		   ((ndp.pass.ircer0) ? "ircer0 " : ""),
+		   ((ndp.pass.ircer1) ? "ircer1 " : ""),
+		   ((ndp.pass.ircer2) ? "ircer2 " : ""));
 	}
       fprintf (stderr, "Successfully forked, spawns pid (%d)\n\n", pid_child);
       break;
