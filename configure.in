@@ -1,0 +1,66 @@
+dnl --------------------------------------------------------------
+dnl Process this file with autoconf to produce a configure script.
+dnl $Author$
+dnl $Header$
+dnl
+
+AC_INIT(src/ndp.c)
+AC_CONFIG_HEADER(include/defs.h)
+
+AC_SUBST(GNU_ADDON_OBJ)
+
+
+dnl Checks for programs.
+
+AC_PROG_CC
+
+dnl Use these compiler flags if we have gcc.
+
+if test $ac_cv_prog_gcc = yes; then
+    CCOPTS='-O3 -funroll-loops -fomit-frame-pointer -pipe -Wall'
+    CFLAGS="$CCOPTS"
+fi
+
+dnl Checks for header files.
+
+AC_HEADER_STDC
+AC_HEADER_SYS_WAIT
+AC_CHECK_HEADERS(fcntl.h sys/time.h syslog.h unistd.h getopt.h sys/select.h )
+
+dnl
+dnl check if sockaddr has sa_len member.
+dnl learnt from nmap2.3BETAx fyodor http://www.insecure.org
+dnl
+
+AC_CACHE_CHECK(if sockaddr has sa_len member, ac_cv_sockaddr_has_sa_len,
+        AC_TRY_COMPILE([
+#               include <sys/types.h>
+#               include <sys/socket.h>],
+                [unsigned int i = sizeof(((struct sockaddr *)0)->sa_len)], 
+        ac_cv_sockaddr_has_sa_len=yes,
+        ac_cv_sockaddr_has_sa_len=no))
+if test $ac_cv_sockaddr_has_sa_len = yes ; then
+        CFLAGS="$CFLAGS -DHAVE_SOCKADDR_SALEN"
+fi
+
+dnl
+dnl Checks for typedefs, structures, and compiler characteristics.
+dnl
+AC_HEADER_TIME
+
+dnl Checks for library functions.
+
+AC_CHECK_FUNCS(gettimeofday strerror strstr strcasecmp strncasecmp)
+
+AC_CHECK_FUNC(getopt_long, ,
+  [ GNU_ADDON_OBJ="$GNU_ADDON_OBJ getopt.o getopt1.o" ])
+
+AC_FUNC_ALLOCA
+AC_TYPE_SIGNAL
+
+AC_CHECK_LIB(socket, select, LIBS="$LIBS -lsocket",)
+AC_CHECK_LIB(inet,   select, LIBS="$LIBS -linet",)
+AC_CHECK_LIB(cposix, select, LIBS="$LIBS -lcposix",)
+AC_CHECK_LIB(nsl,    select, LIBS="$LIBS -lnsl",)
+
+AC_OUTPUT(src/Makefile)

@@ -1,0 +1,21 @@
+`$Id$'
+      Copyright (c) 1999 bonelli nicola <awgn@antifork.org>
+---------------------------------------------------------------
+
+tested environments:
+
+-(Linux libc[56] glibc[12]
+-(OpenBSD 2.[56]
+-(FreeBSD 3.3.x
+-(NetBSD ?
+ 
+HOWTO INSTALL:
+
+$ ./configure
+$ make
+
+Send bugs-report to: awgn@antifork.org 
+
+Before reporting a bug, please try to reproduce it.
+
+Thanks.
