@@ -1,4 +1,4 @@
-/* apg.db 01/02/03 rel 02 $Id$ */
+/* apg.db 01/05/19 rel 01 $Id$ */
 /*
  *  $Id$
  *  apg.par.c
@@ -26,32 +26,30 @@
  *
  */
 
-/* standard includes
-*/
+/* standard includes */
 
 #define _APG_PARSER_C
 #include "ndp.tab.h"
-/* mealy prototypes
-*/
+/* mealy prototypes */
 
-static int ac_0 P((void));
-static int ac_1 P((void));
-static int ac_2 P((void));
-static int ac_3 P((void));
-static int ac_4 P((void));
+static int ac_0 P ((void));
+static int ac_1 P ((void));
+static int ac_2 P ((void));
+static int ac_3 P ((void));
+static int ac_4 P ((void));
 
-/* static variables
-*/
+/* static variables */
 
 static char *file_name;
-static int apg_flags, apg_current_line, apg_buff_line, apg_token;
+static int apg_flags, apg_current_line;
+static int apg_buff_line, apg_token;
 static int apg_state_code, apg_input_code;
 
 #ifdef APG_PERF
 static int global_token;
 #endif
 
-static unsigned char *token_basebuffer;
+static unsigned char *base_tokens;
 
 static char *file_image;
 
@@ -62,8 +60,7 @@ static seg_t *tail_seg;
 
 int apg_errno;
 
-/* common defines and internal flags
-*/
+/* common defines and internal flags */
 
 #define APG_OPEN                0
 #define APG_CLOSE               1
@@ -74,9 +71,9 @@ int apg_errno;
 
 #define TOKEN_REQUIRED	     0x01
 
-/* internal flags */
+/* general flags */
 
-#define APG_PARSED_GRILL     0x01	
+#define APG_PARSED_GRILL     0x01
 #define APG_RESET_STREAM     0x02
 #define APG_OCT_TOKEN        0x04
 #define APG_HEX_TOKEN        0x08
@@ -87,39 +84,74 @@ int apg_errno;
 #define APG_TYPE_ERR         0x01
 #define APG_NULL_ERR	     0x02
 #define APG_OFFSET_ERR       0x03
-#define APG_BOUND_ERR        0x04
+#define APG_LIMIT_ERR        0x04
 #define APG_ESC_ERR          0x05
 #define APG_FEW_ERR	     0x06
 #define APG_MANY_ERR 	     0x07
 #define APG_IPV4_ERR         0x08
 #define APG_HOST_ERR         0x09
 
-/* macros
-*/
+/* macros */
 
 #if defined (__GNUC__) && !defined (__STRICT_ANSI__)
 int c_index[256] =
-  {['#'] 1,[APG_SEPLINE] 2,[APG_SEPTOKEN] 3,['\''] 4,['\\'] 5,[' '] 6,['\t'] 6,['\n'] 7 };
+  {['#'] 1,[APG_SEPLINE] 2,[APG_SEPTOKEN] 3,['\''] 4,['\\'] 5,[' '] 6, ['\t'] 6,['\n'] 7
+};
 #else
 int c_index[256];
 #endif
 
-#define AUTO_STRTOL(token,addr_endptr) ( apg_flags & \
-(APG_OCT_TOKEN|APG_HEX_TOKEN) ? strtol(token,addr_endptr,0) : \
-strtol(token,addr_endptr,10))
+#ifndef ub4
+#define ub4     unsigned long
+#define ub2     unsigned short
+#define ub1     unsigned char
+#endif
 
-#define C_BOUND(x,v,y) ( (x|y) ? ( (x<=v) && (v<=y) ) : (1) )
+#define O_PUSH(base_P, offset, obj_P ,t)\
+\
+( *(t *)((ub1 *)base_P+offset+sizeof(ub4)) = (t)*obj_P )
 
-#define O_PUSH(base,offset,buff,type) ( *(type *)((char *)base+offset+\
-sizeof(int))= *(type *)buff )
+#define P_PUSH(base_P, offset, ptr)\
+\
+( *(ub4 *)((ub1 *)base_P+offset+sizeof(ub4))=(ub4)ptr)
 
-#define P_PUSH(base,offset,ptr) (*(long *)((char *)base+offset+\
-sizeof(int))=(long)ptr)
+#define ISODIGIT(x)\
+\
+( '0' <= x && x <= '3' ? 2 : ( '4' <= x && x <= '7' ? 1 : 0 ) )
 
-#define ISODIGIT(x) ( '0' <= x && x <= '3' ? 2 : ( '4' <= x && x <= '7' ? 1 : 0 ) )
+#define C_LIMIT(x,v,y)\
+\
+( (x|y) ? ( x<= v && v<=y ) : 1 )
 
-/* private functions, mealy tables
-*/
+#define M_STRTOL(token,addr_endptr)\
+\
+( apg_flags &  (APG_OCT_TOKEN|APG_HEX_TOKEN) ? strtol(token,addr_endptr,0) :  strtol(token,addr_endptr,10))
+
+/* private functions, mealy tables */
+
+/* This is similar to the rotating hash, but it actually mixes the internal 
+state. It takes 9n+9 instructions and produces a full 4-byte result.
+Preliminary analysis suggests there are no funnels.  */
+
+#ifdef __GNUC__
+__inline
+#else
+#endif
+unsigned long
+one_at_a_time_hash (char *key)
+{
+  int hash, i;
+  for (hash = 0, i = 0; key[i]; ++i)
+    {
+      hash += key[i];
+      hash += (hash << 10);
+      hash ^= (hash >> 6);
+    }
+  hash += (hash << 3);
+  hash ^= (hash >> 11);
+  hash += (hash << 15);
+  return (hash);
+}
 
 static void
 fatalerr (char *pattern, ...)
@@ -139,7 +171,7 @@ static void *
 xmalloc (size)
      unsigned int size;
 {
-  void *result =  malloc (size);
+  void *result = malloc (size);
   if (result == 0)
     fatalerr ("xmalloc: virtual memory exhausted");
   return result;
@@ -162,10 +194,10 @@ xrealloc (ptr, size)
 
 static void *
 xcalloc (nelem, elsize)
-      unsigned int nelem;
-      unsigned int elsize;	
+     unsigned int nelem;
+     unsigned int elsize;
 {
-  void *result = (char *) calloc (nelem,elsize);
+  void *result = (char *) calloc (nelem, elsize);
   if (result == 0)
     fatalerr ("xcalloc: virtual memory exhausted");
   return result;
@@ -175,7 +207,7 @@ xcalloc (nelem, elsize)
 static char *
 ioctl_buffer (char *fn, int flag)
 {
-  int fd;
+  int fd,sz;
   struct stat f_stat;
 
   switch (flag)
@@ -187,19 +219,20 @@ ioctl_buffer (char *fn, int flag)
 
       if (stat (fn, &f_stat) == -1)
 	return (char *) NULL;
+     
+      sz = (int) f_stat.st_size;
 
-      file_image = (char *) xrealloc (file_image, f_stat.st_size + 1);
+      file_image = (char *) xrealloc (file_image, sz + 1);
 
       if ((fd = open (fn, O_RDONLY)) == -1)
 	fatalerr ("err: %s", strerror (errno));
-      read (fd, file_image, f_stat.st_size);
-      *(file_image + f_stat.st_size) = 0;
+      read (fd, file_image, sz );
+      *(file_image + sz ) = 0;
 
       close (fd);
-
       return file_image;
-
       break;
+
     case APG_CLOSE:
 
       if (file_name)
@@ -208,7 +241,6 @@ ioctl_buffer (char *fn, int flag)
 	fatalerr ("err: apg_buffer already closed");
 
       free (file_image);
-
       return file_image = (char *) NULL;
       break;
     }
@@ -217,32 +249,33 @@ ioctl_buffer (char *fn, int flag)
 }
 
 
-static unsigned char *jmp_token, *jmp_token_0;
-static unsigned char *jmp_stream;
+static unsigned char *p_token, *p_token_0;
+static unsigned char *p_stream;
 
-
-static int ac_0 (void)
+static int
+ac_0 (void)
 {
-  if (*jmp_stream == '\\') (jmp_stream)++;
-  if (*jmp_stream == '\n') apg_buff_line++;
-
-  jmp_stream++;
+  if (*p_stream   == '\\') p_stream++;
+  if (*p_stream++ == '\n') apg_buff_line++;
 
   return 1;
 }
 
-static int ac_1 (void)
+static int
+ac_1 (void)
 {
-  *(jmp_token_0++) = *(jmp_stream++);
+  *(p_token_0++) = *(p_stream++);
 
   return 1;
 }
 
-static int ac_2 (void)
+static int
+ac_2 (void)
 {
-  if (*jmp_stream == '\n') apg_buff_line++;
-  *jmp_token_0++ = '\0';
-  jmp_stream++;
+  if (*p_stream == '\n') apg_buff_line++;
+  *p_token_0++ = '\0';
+
+  p_stream++;
   apg_token++;
 
   return 0;
@@ -250,8 +283,8 @@ static int ac_2 (void)
 
 #if defined (__GNUC__) && !defined (__STRICT_ANSI__)
 char c_escape[256] =
-  {['a'] '\a',['b'] '\b',['t'] '\t',['n'] '\n',['v'] '\v',['f'] '\f',
-    ['r'] '\r' };
+  {['a'] '\a',['b'] '\b',['t'] '\t',['n'] '\n',['v'] '\v',['f'] '\f', ['r'] '\r'
+};
 #else
 int c_escape[256];
 #endif
@@ -262,41 +295,40 @@ ac_3 (void)
 {
   register char c;
 
-  jmp_stream++;
+  p_stream++;
 
-  if ((c = c_escape[*jmp_stream]))
+  if ((c = c_escape[*p_stream]))
     {
       /* escape */
-      *jmp_token_0 = c;
+      *p_token_0 = c;
     }
   else
     {
-      switch (*jmp_stream)
+      switch (*p_stream)
 	{
 	case '\n':
-	  memmove (jmp_stream, jmp_stream + 1, strlen ((const char *)(jmp_stream + 1)));
-	  *jmp_token_0 = *jmp_stream;
+	  memmove (p_stream, p_stream + 1, strlen ((const char *) (p_stream + 1)));
+	  *p_token_0 = *p_stream;
 	  break;
 	case '0':
-	  if (*(jmp_stream + 1) == 'x' || *(jmp_stream + 1) == 'X')
+	  if (*(p_stream + 1) == 'x' || *(p_stream + 1) == 'X')
 	    apg_flags |= APG_HEX_TOKEN;
 	  else
 	    apg_flags |= APG_OCT_TOKEN;
 
-	  *jmp_token_0 = APG_ACK_CHR;
-	  jmp_stream--;
+	  *p_token_0 = APG_ACK_CHR;
+	  p_stream--;
 	  break;
 
 	default:
-	  *jmp_token_0 = *jmp_stream;
+	  *p_token_0 = *p_stream;
 	  break;
 
 	}
-
     }
 
-  jmp_token_0++;
-  jmp_stream++;
+  p_token_0++;
+  p_stream++;
 
   return 1;
 
@@ -307,14 +339,16 @@ ac_4 (void)
 {
   char *eptr;
 
-  jmp_stream--;
+  p_stream--;
 
-  if ((eptr = strchr ((const char *)jmp_stream, '\n')) != NULL) *eptr = '\0';
+  if ((eptr = strchr ((const char *) p_stream, '\n')) != NULL)
+    *eptr = '\0';
 
-  while ( *jmp_stream != '\n' && (char *)jmp_stream > (char *)file_image ) jmp_stream--;
+  while (*p_stream != '\n' && (char *) p_stream > (char *) file_image)
+    p_stream--;
 
-  fatalerr ("%s:%d: parse error near -> \"%s\" ", file_name, apg_buff_line+1,
-	    ++jmp_stream);
+  fatalerr ("%s:%d: parse error near -> \"%s\" ", file_name,
+	    apg_buff_line + 1, ++p_stream);
 
   return 1;
 }
@@ -349,22 +383,21 @@ get_token (void)
   register int reg_input, reg_state;
 
   apg_current_line = apg_buff_line;
-  jmp_token        = jmp_token_0;
+  p_token = p_token_0;
 
 	/*** load registers ***/
 
   reg_state = apg_mealy_state_table[apg_state_code][apg_input_code];
-  reg_input = c_index[*jmp_stream];
+  reg_input = c_index[*p_stream];
 
   while ((*apg_mealy_action_table[reg_state][reg_input]) ())
     {
-      if (!*jmp_stream)
-	return (char *) NULL;
+      if (*p_stream == 0 ) return (char *) NULL;  /* EOF */
 
       if ((reg_state = apg_mealy_state_table[reg_state][reg_input]) == 1)
 	apg_token = 0;
 
-      reg_input = c_index[*jmp_stream];
+      reg_input = c_index[*p_stream];
     }
 
 	/*** save registers ***/
@@ -376,12 +409,11 @@ get_token (void)
   global_token++;
 #endif
 
-  return (char *)jmp_token;
+  return (char *) p_token;
 
 }
 
-/* arena menagement
-*/
+/* arena menagement */
 
 static grill_t *
 alloc_segment (grill_t * p)
@@ -389,13 +421,14 @@ alloc_segment (grill_t * p)
 
   grill_t *q;
 
-  /* in case p doesn't point to the last grill_t, usually it doesn't happen */
+  /* p reasonably points to the last grill_t. In case it doesn't ... */
 
-  for (q=p; q != NULL; q = q->next) p=q;  
- 
-  /* we must be sure the segment is empty: calloc() is required. */
+  for (q = p; q != NULL; q = q->next)
+    p = q;
 
-  q = (grill_t *) xcalloc (1,sizeof (grill_t));
+  /* we must be sure the segment is empty: xcalloc() is required then. */
+
+  q = (grill_t *) xcalloc (1, sizeof (grill_t));
 
   if (p == NULL)
     return (apg_arena = apg_stream = q);
@@ -404,28 +437,40 @@ alloc_segment (grill_t * p)
 
 }
 
-static int
-get_lineid (char *frame)
+#ifdef __GNUC__
+__inline
+#else
+#endif
+int
+b_search (key)
+     char * key;
 {
-  register int i = 1, fd = 1;
+  register int high, i, low;
+  register unsigned long hash;
+  hash = one_at_a_time_hash (key);
 
-  while (line_list[i] && fd)
-    fd = strcmp (line_list[i++], frame);
+  for (low = -1, high = QMAX_ELEM+1; high - low > 1;)
+    {
+      i = (high + low) >> 1;
+      if (hash <= line_v[i].hash)
+        high = i;
+      else
+        low = i;
+    }
+  if ( hash == line_v[high].hash )
+    return (high);
 
-  if (fd)
-    fatalerr ("%s:%d: `%s' unknown line label",
-	      file_name, apg_buff_line + 1, frame);
+  fatalerr ("%s:%d: `%s' unknown line label", file_name, apg_buff_line + 1, key);
 
-  return (i - 1);
+  return (-1); /* unreachable */
 
 }
 
-/* token err interface
-*/
+/* token err interface */
 
 static void
 token_fatalerr (int line_id, int token_id, int type, int errn0, int low,
-		 int high, char *token)
+		int high, char *token)
 {
   char *p = token;
 
@@ -436,106 +481,109 @@ token_fatalerr (int line_id, int token_id, int type, int errn0, int low,
   switch (errn0)
     {
     case APG_TYPE_ERR:
-     fprintf (stderr,
-             "%s:%d: label=%s,token=%d -> {%s} is designed to be a %s type;\n",
-	     file_name, apg_current_line + 1, line_list[line_id], token_id,
-	     token, types_id[type]);
+      fprintf (stderr,
+	       "%s:%d: label=%s,token=%d -> {%s} is designed to be a %s type;\n",
+	       file_name, apg_current_line + 1, line_v[line_id].id, token_id,
+	       token, types_id[type]);
       break;
     case APG_NULL_ERR:
       fprintf (stderr,
-              "%s:%d: label=%s,token=%d -> {%s} isn't an optional argument;\n",
-              file_name, apg_current_line , line_list[line_id], token_id,
-              token);
-
-      break;
-    case APG_OFFSET_ERR:
-      fprintf (stderr, 
-	       "%s:%d: label=%s,token=%d -> {%s} too many tokens;\n",
-	       file_name, apg_current_line + 1, line_list[line_id], token_id,
+	       "%s:%d: label=%s,token=%d -> {%s} isn't an optional argument;\n",
+	       file_name, apg_current_line, line_v[line_id].id, token_id,
 	       token);
 
       break;
-    case APG_BOUND_ERR:
+    case APG_OFFSET_ERR:
+      fprintf (stderr,
+	       "%s:%d: label=%s,token=%d -> {%s} too many tokens;\n",
+	       file_name, apg_current_line + 1, line_v[line_id].id, token_id,
+	       token);
+
+      break;
+    case APG_LIMIT_ERR:
       fprintf (stderr,
 	       "%s:%d: label=%s,token=%d -> {%s} is designed to be a %s[%d,%d]. Out of range;\n",
-	       file_name, apg_current_line + 1, line_list[line_id], token_id,
+	       file_name, apg_current_line + 1, line_v[line_id].id, token_id,
 	       token, types_id[type], low, high);
 
       break;
     case APG_ESC_ERR:
       fprintf (stderr,
 	       "%s:%d: label=%s,token=%d -> {%s} bad escape sequence;\n",
-	       file_name, apg_current_line + 1, line_list[line_id], token_id,
+	       file_name, apg_current_line + 1, line_v[line_id].id, token_id,
 	       token);
       break;
 
     case APG_MANY_ERR:
       fprintf (stderr,
 	       "%s: label=%s is designed to occur no more than %d time;\n",
-               file_name, line_list[line_id], high);
+	       file_name, line_v[line_id].id, high);
       break;
 
     case APG_FEW_ERR:
       fprintf (stderr,
-               "%s: label=%s is designed to occur at least %d time;\n",
-               file_name, line_list[line_id], low);
+	       "%s: label=%s is designed to occur at least %d time;\n",
+	       file_name, line_v[line_id].id, low);
       break;
 
     case APG_IPV4_ERR:
       fprintf (stderr,
-	  "%s:%d: label=%s,token=%d -> {%s} is designed to be a valid ipv4;\n",
-          file_name, apg_current_line + 1, line_list[line_id], token_id,
-	  token);
+	       "%s:%d: label=%s,token=%d -> {%s} is designed to be a valid ipv4;\n",
+	       file_name, apg_current_line + 1, line_v[line_id].id, token_id,
+	       token);
 
       break;
 
     case APG_HOST_ERR:
       fprintf (stderr,
-	  "%s:%d: label=%s,token=%d -> {%s} is designed to be a valid host;\n",
-	  file_name, apg_current_line + 1, line_list[line_id], token_id,
-	  token);
+	       "%s:%d: label=%s,token=%d -> {%s} is designed to be a valid host;\n",
+	       file_name, apg_current_line + 1, line_v[line_id].id, token_id,
+	       token);
 
       break;
 
     }
- 
-   apg_flags |= APG_FATALERR;
+
+  apg_flags |= APG_FATALERR;
 }
 
-/* ymalloc & seg_t
-*/
+/* ymalloc & seg_t */
 
 static void
 alloc_seg_t (char *r)
 {
   seg_t *p = tail_seg, *q;
 
-  q       = (seg_t *) xmalloc (sizeof (seg_t));
-  q->ptr  = r;
+  q = (seg_t *) xmalloc (sizeof (seg_t));
+  q->ptr = r;
   q->next = NULL;
 
   if (p)
-    p->next  = tail_seg = q;
+    p->next = tail_seg = q;
   else
-    { 
-     head_seg = q;
-     tail_seg = q;
+    {
+      head_seg = q;
+      tail_seg = q;
     }
 }
 
 static void *
 ymalloc (size_t size)
 {
-  register void *p;
+  void *p;
 
   p = (void *) xmalloc (size);
   alloc_seg_t (p);
 
   return p;
 }
-/* strings function
-*/
 
+/* strings function */
+
+#ifdef __GNUC__
+__inline
+#else
+#endif
 static int
 strholen (char *p)
 {
@@ -568,164 +616,156 @@ strholen (char *p)
   return c;
 }
 
-static char *
-proc_string (char *token, int line_id, int token_id)
-{
-  char *ptr, bufftemp[6] = "";
-  static char *safe_token;
-
-  safe_token = ptr = (char *) xrealloc (safe_token, strlen (token) + 1);
-
-  strcpy (safe_token, token);
-
-  while ((ptr = (char *) strchr (ptr, APG_ACK_CHR)))
-    {
-      register int i = strholen (ptr + 1);
-      register int j = strlen (ptr + i);
-
-      strncpy (bufftemp, ptr + 1, i);
-      bufftemp[i] = 0;
-      *ptr = (char) strtol (bufftemp, NULL, 0);
-
-      if (!*ptr || !i)
-	token_fatalerr (line_id, token_id, T_STR, APG_ESC_ERR, 0, 0, token);
-
-      memmove (ptr + 1, ptr + i + 1, j);
-      *(ptr + j + 1) = 0;
-      ptr++;
-
-    }
-  return safe_token;
-
-}
-
-/* apg type checks
-*/
+/* apg type checks */
 
 #define PROC_OBJECT(p) ( *p == APG_ACK_CHR ? (p+1) : (p)  )
 
 #define L_TYPE(l,t)    apgtb[l][t][0]
-#define L_LOW(l,t)     apgtb[l][t][1] 
-#define L_HIGH(l,t)    apgtb[l][t][2] 
+#define L_LOW(l,t)     apgtb[l][t][1]
+#define L_HIGH(l,t)    apgtb[l][t][2]
 #define L_OPT(l,t)     apgtb[l][t][3]
-#define L_REGEX(l,t)   apgtb[l][t][4] 
+#define L_REGEX(l,t)   apgtb[l][t][4]
 
 static void
 token_analysis (char *token, int line_id, int token_id)
 {
-  char *endptr, *pp=NULL;
-  static void *sp;
+  char *endptr, *pp = NULL;
+  long sp;
   int offset = 0;
 
 
   /* first step */
-  
-  if( (offset= apg_offset[line_id][token_id])== -1)
-   token_fatalerr (line_id, token_id, 
-                   L_TYPE (line_id,token_id), APG_OFFSET_ERR,
-                   L_LOW (line_id,token_id), L_HIGH (line_id,token_id), token);
 
-  
-  if (token && !*token) return; /* NULL token */
+  if ((offset = apg_offset[line_id][token_id]) == -1)
+    token_fatalerr (line_id, token_id,
+		    L_TYPE (line_id, token_id), APG_OFFSET_ERR,
+		    L_LOW (line_id, token_id), L_HIGH (line_id, token_id),
+		    token);
 
-    switch (L_TYPE (line_id,token_id))
+
+  if (token && !*token)
+    return;			/* NULL token */
+
+  switch (L_TYPE (line_id, token_id))
+    {
+    case T_STR:
+    case T_HOST:
+    case T_IPV4:
+      
+      pp = (char *) ymalloc (strlen (token) + 1);
+      break;
+
+    default:
+      token = PROC_OBJECT (token);
+      break;
+    }
+
+  switch (L_TYPE (line_id, token_id))
+    {
+
+    case T_INT:
+    case T_U_32:
+    case T_SHORT:
+    case T_U_16:
+    case T_CHAR:
+    case T_U_8:
+
+      if (L_TYPE (line_id, token_id) == T_CHAR && strlen (token) == 1)
+	{
+	  O_PUSH (apg_stream, offset, token, char);
+	  return;
+	}
+
+      sp = M_STRTOL (token, &endptr);
+
+      if (!*endptr)
+	{
+
+	  if (C_LIMIT (L_LOW (line_id, token_id), sp, L_HIGH (line_id, token_id)))
+	    {
+	      switch (L_TYPE (line_id, token_id))
+		{
+		case T_INT:
+		  O_PUSH (apg_stream, offset, &sp, int);
+		  break;
+		case T_U_32:
+		  O_PUSH (apg_stream, offset, &sp, unsigned int);
+		  break;
+		case T_SHORT:
+		  O_PUSH (apg_stream, offset, &sp, short);
+		  break;
+		case T_U_16:
+		  O_PUSH (apg_stream, offset, &sp, unsigned short);
+		  break;
+		case T_CHAR:
+		  O_PUSH (apg_stream, offset, &sp, char);
+		  break;
+		case T_U_8:
+		  O_PUSH (apg_stream, offset, &sp, unsigned char);
+		  break;
+		}
+	      return;
+	    }
+	  else
+	    token_fatalerr (line_id, token_id,
+			    L_TYPE (line_id, token_id), APG_LIMIT_ERR,
+			    L_LOW (line_id, token_id),
+			    L_HIGH (line_id, token_id), token);
+	}
+      else
+	token_fatalerr (line_id, token_id,
+			L_TYPE (line_id, token_id), APG_TYPE_ERR,
+			L_LOW (line_id, token_id),
+			L_HIGH (line_id, token_id), token);
+      return;
+      break;
+
+    case T_STR:
       {
-      case T_STR:
-      case T_HOST:
-      case T_IPV4:
+	strcpy ( pp, token );
 
-	pp = (char *) ymalloc (strlen (token) + 1);
-	break;
+	if ( strchr (token, APG_ACK_CHR) )
+	{
+	  char *ptr=pp, bufftemp[6] = "";
 
-      default:
-	token = PROC_OBJECT (token);
-	sp = (void *) xrealloc (sp, sizeof (long));
-	break;
-      }
+	  while ((ptr = (char *) strchr (ptr, APG_ACK_CHR)))
+	    {
+	      int i = strholen (ptr + 1);
+	      int j = strlen (ptr + i);
 
-    switch (L_TYPE (line_id,token_id))
-      {
+	      strncpy (bufftemp, ptr + 1, i);
+	      bufftemp[i] = 0;
+	      *ptr = (char) strtol (bufftemp, NULL, 0);
 
-      case T_INT:
-      case T_U_32:
-      case T_SHORT:
-      case T_U_16:
-      case T_CHAR:
-      case T_U_8:
+	      if (!*ptr || !i)
+		  token_fatalerr (line_id, token_id, T_STR, APG_ESC_ERR, 0, 0, token);
 
-	if (L_TYPE (line_id,token_id) == T_CHAR && strlen (token) == 1)
+	      memmove (ptr + 1, ptr + i + 1, j);
+	      *(ptr + j + 1) = 0;
+	      ptr++;
+
+	    }
+	}
+
+	if (! (L_LOW (line_id, token_id)
+	    || L_HIGH (line_id, token_id))
+	    || C_LIMIT (L_LOW (line_id, token_id), strlen (pp), L_HIGH (line_id, token_id)))
 	  {
-	    O_PUSH (apg_stream, offset, token, char);
+	    P_PUSH (apg_stream, offset, pp);
 	    return;
 	  }
 
-	*(long *) sp = AUTO_STRTOL (token, &endptr);
-
-	if (!*endptr)
-	  {
-	    if (C_BOUND (L_LOW (line_id,token_id), *(long *) sp, L_HIGH (line_id,token_id)))
-	      {
-		switch (L_TYPE (line_id,token_id))
-		  {
-		  case T_INT:
-		    O_PUSH (apg_stream, offset, sp, int);
-		    break;
-		  case T_U_32:
-		    O_PUSH (apg_stream, offset, sp, unsigned int);
-		    break;
-		  case T_SHORT:
-		    O_PUSH (apg_stream, offset, sp, short);
-		    break;
-		  case T_U_16:
-		    O_PUSH (apg_stream, offset, sp, unsigned short);
-		    break;
-		  case T_CHAR:
-		    O_PUSH (apg_stream, offset, sp, char);
-		    break;
-		  case T_U_8:
-		    O_PUSH (apg_stream, offset, sp, unsigned char);
-		    break;
-		  }
-		return;
-	      }
-	    else
-	      token_fatalerr (line_id, token_id, 
-                              L_TYPE (line_id,token_id), APG_BOUND_ERR,
-			      L_LOW (line_id,token_id), 
-                              L_HIGH (line_id,token_id), token);
-	  }
 	else
-	  token_fatalerr (line_id, token_id, 
-                          L_TYPE (line_id,token_id), APG_TYPE_ERR,
-			  L_LOW (line_id,token_id), 
-                          L_HIGH (line_id,token_id), token);
+	  token_fatalerr (line_id, token_id,
+			  L_TYPE (line_id, token_id), APG_LIMIT_ERR,
+			  L_LOW  (line_id, token_id),
+			  L_HIGH (line_id, token_id), token);
+
 	return;
-	break;
+      }
+      break;
 
-      case T_STR:
-	{
-	  char *new_token = proc_string (token, line_id, token_id);
-
-	  if (!(L_LOW (line_id,token_id) || L_HIGH (line_id,token_id))
-	      || C_BOUND (L_LOW (line_id,token_id), strlen (new_token), L_HIGH (line_id,token_id)))
-	    {
-	      strcpy (pp, new_token);
-	      P_PUSH (apg_stream, offset, pp);
-	      return;
-
-	    }
-	  else
-	    token_fatalerr (line_id, token_id, 
-                            L_TYPE (line_id,token_id), APG_BOUND_ERR,
-			    L_LOW (line_id,token_id), 
-                            L_HIGH (line_id,token_id), token);
-
-	  return;
-	}
-	break;
-
-/* host/ipv4 regmacro
-*/
+/* host/ipv4 regmacro */
 
 #define R_0_9(x)      ( '0' <= x && x <= '9' )
 #define R_A_Z(x)      ( 'A' <= x && x <= 'Z' )
@@ -742,129 +782,124 @@ token_analysis (char *token, int line_id, int token_id)
 #define H_L_ALPHA  0x20
     case T_HOST:
       {
-        register int state = H_DOT;
-        register int t_counter = 1;
-        char *P = (char *) token;
+	register int state = H_DOT;
+	register int t_counter = 1;
+	char *P = (char *) token;
 
-        while (*P)
-          {
-            switch (*P)
-              {
-              case '.':
-                if (state & (H_DOT | H_MIN))
-                  state |= H_ERR;
-                state |= (H_DOT | H_2LD);
-                state &= ~(H_L_ALPHA | H_MIN);
-                t_counter++;
-                break;
-              case '-':
-                if (state & (H_DOT | H_MIN))
-                  state |= H_ERR;
-                state |= H_MIN;
-                break;
-              default:
-                state &= ~(H_DOT | H_MIN);
-                if (!R_ALPHANUM (*P))
-                  state |= H_ERR;
-                if (R_ALPHA (*P))
-                  state |= (H_ALPHA | H_L_ALPHA);
-                break;
-              }
-            P++;
+	while (*P)
+	  {
+	    switch (*P)
+	      {
+	      case '.':
+		if (state & (H_DOT | H_MIN))
+		  state |= H_ERR;
+		state |= (H_DOT | H_2LD);
+		state &= ~(H_L_ALPHA | H_MIN);
+		t_counter++;
+		break;
+	      case '-':
+		if (state & (H_DOT | H_MIN))
+		  state |= H_ERR;
+		state |= H_MIN;
+		break;
+	      default:
+		state &= ~(H_DOT | H_MIN);
+		if (!R_ALPHANUM (*P))
+		  state |= H_ERR;
+		if (R_ALPHA (*P))
+		  state |= (H_ALPHA | H_L_ALPHA);
+		break;
+	      }
+	    P++;
 
-          }
+	  }
 
-        if (*P ||
-            state & (H_ERR|H_DOT|H_MIN) ||
-            ~state & H_2LD || (state & H_ALPHA && ~state & H_L_ALPHA ) )
-          {
-            token_fatalerr (line_id, token_id, T_HOST,
-                            APG_HOST_ERR, L_LOW (line_id, token_id),
-                            L_HIGH (line_id, token_id), token);
-            return;
-          }
+	if (*P || state & (H_ERR | H_DOT | H_MIN) ||
+	    ~state & H_2LD || (state & H_ALPHA && ~state & H_L_ALPHA))
+	  {
+	    token_fatalerr (line_id, token_id, T_HOST, APG_HOST_ERR, L_LOW (line_id, token_id),
+			    L_HIGH (line_id, token_id), token);
+	    return;
+	  }
 
-        else if (state & H_ALPHA)
-          {
-            strcpy (pp, token);
-            P_PUSH (apg_stream, offset, pp);
-            return;
-          }
+	else if (state & H_ALPHA)
+	  {
+	    strcpy (pp, token);
+	    P_PUSH (apg_stream, offset, pp);
+	    return;
+	  }
 
       }
     case T_IPV4:
       {
-        register int state = H_DOT;
-        register int t_counter = 1;
-        register int t_byte = 0;
-        char *P = (char *) token;
+	register int state = H_DOT;
+	register int t_counter = 1;
+	register int t_byte = 0;
+	char *P = (char *) token;
 
-        while (*P)
-          {
-            switch (*P)
-              {
-              case '.':
-                if (state & H_DOT)
-                  state |= H_ERR;
-                state |= H_DOT;
-                t_counter++;
-                t_byte = 0;
-                break;
-              default:
-                state &= ~H_DOT;
-                if (!R_0_9 (*P))
-                  state |= H_ERR;
+	while (*P)
+	  {
+	    switch (*P)
+	      {
+	      case '.':
+		if (state & H_DOT)
+		  state |= H_ERR;
+		state |= H_DOT;
+		t_counter++;
+		t_byte = 0;
+		break;
+	      default:
+		state &= ~H_DOT;
+		if (!R_0_9 (*P))
+		  state |= H_ERR;
 
 		/* t_byte = t_byte * 10 + val(*P) */
 
-                t_byte = (t_byte<<3) + (t_byte<<1) + (*P - '0');
+		t_byte = (t_byte << 3) + (t_byte << 1) + (*P - '0');
 
-                if (t_byte & 0xffffff00)
-                  state |= H_ERR;
-                break;
-              }
-            P++;
+		if (t_byte & 0xffffff00)
+		  state |= H_ERR;
+		break;
+	      }
+	    P++;
 
-          }
+	  }
 
-        if (*P || state & (H_ERR|H_DOT) || t_counter != 4)
-          {
-            token_fatalerr (line_id, token_id, T_IPV4,
-                            APG_IPV4_ERR, L_LOW (line_id, token_id),
-                            L_HIGH (line_id, token_id), token);
-            return;
-          }
+	if (*P || state & (H_ERR | H_DOT) || t_counter != 4)
+	  {
+	    token_fatalerr (line_id, token_id, T_IPV4, APG_IPV4_ERR, L_LOW (line_id, token_id),
+			    L_HIGH (line_id, token_id), token);
+	    return;
+	  }
 
-        else
-          {
-            strcpy (pp, token);
-            P_PUSH (apg_stream, offset, pp);
-            return;
-          }
+	else
+	  {
+	    strcpy (pp, token);
+	    P_PUSH (apg_stream, offset, pp);
+	    return;
+	  }
 
       }
 
       break;
-  }
+    }
   return;
 }
 
-/* error api
-*/
+/* error api */
 
 static char *err_table[] = {
   "apg: ok",
   "apg: grill arena is empty",
   "apg: NULL pointer",
   "apg: end of grill",
-
 };
 
 char *
 apg_strerror (int errnum)
 {
   static char *sb;
-  register int i = errnum;
+  int i = errnum;
 
   if (errnum < 1 || errnum > APG_MAXERR)
     i = 0;
@@ -875,8 +910,7 @@ apg_strerror (int errnum)
 
 }
 
-/* standard api
-*/
+/* standard api */
 
 void
 apg_free_grill (grill_t * p_ptr)
@@ -946,78 +980,18 @@ apg_get_line (grill_t ** apg_user_ptr)
 
 }
 
-/* parser
-*/
+/* parser */
 
-#ifdef APG_PERF
-#include <sys/time.h>
-#include <unistd.h>
-
-typedef struct
-{
-  int hour;
-  int min;
-  int sec;
-  int dec;
-}
-elapsed_val;
-
-int
-difftimeofday (now, old, diff)
-     struct timeval now;
-     struct timeval old;
-     elapsed_val *diff;
-
-{
-  register int r1, r2, r3, r4;
-
-  r1 = (now.tv_usec - old.tv_usec) / 10000;
-  r2 = (now.tv_sec - old.tv_sec) % 60;
-  r3 = ((now.tv_sec - old.tv_sec) / 60) % 60;
-  r4 = ((now.tv_sec - old.tv_sec) / 3600);
-
-  if (r1 < 0)
-    {
-      r1 += 100;
-      r2--;
-      if (r2 < 0)
-        {
-          r2 += 60;
-          r3--;
-          if (r3 < 0)
-            {
-              r3 += 60;
-              r4--;
-
-              if (r4 < 0)
-                return -1;
-            }
-        }
-    }
-  diff->dec = r1;
-  diff->sec = r2;
-  diff->min = r3;
-  diff->hour = r4;
-
-  return 0;
-}
-
-#endif
 
 grill_t *
 apg_parser (int q, ...)
 {
-  register long shift_reg=0;
-  register int i = q, j=0;
+  register long shift_reg = 0;
+  register int i = q, j = 0;
 
   va_list ap;
   char *b_stream = NULL, *tk = NULL;
   char *file;
-#ifdef APG_PERF
-  struct timeval start_time, end_time;
-
-  gettimeofday (&start_time, NULL); 
-#endif
 
   va_start (ap, q);
 
@@ -1052,149 +1026,120 @@ apg_parser (int q, ...)
 
 #if !defined (__GNUC__) || defined (__STRICT_ANSI__)
 
-c_index['#' ]=1;
-c_index[APG_SEPLINE]=2;
-c_index[APG_SEPTOKEN]=3;
-c_index['\'']=4;
-c_index['\\']=5;
-c_index[' ' ]=6;
-c_index['\t']=6;
-c_index['\n']=7;
+  c_index['#'] = 1;
+  c_index[APG_SEPLINE] = 2;
+  c_index[APG_SEPTOKEN] = 3;
+  c_index['\''] = 4;
+  c_index['\\'] = 5;
+  c_index[' '] = 6;
+  c_index['\t'] = 6;
+  c_index['\n'] = 7;
 
-c_escape['a']='\a';
-c_escape['b']='\b';
-c_escape['t']='\t';
-c_escape['n']='\n';
-c_escape['v']='\v';
-c_escape['f']='\f';
-c_escape['r']='\r';
+  c_escape['a'] = '\a';
+  c_escape['b'] = '\b';
+  c_escape['t'] = '\t';
+  c_escape['n'] = '\n';
+  c_escape['v'] = '\v';
+  c_escape['f'] = '\f';
+  c_escape['r'] = '\r';
 
 #endif
 
   /* apg get token setup */
 
-  if (jmp_token == NULL)
+  if (p_token == NULL)
     {
-      token_basebuffer = jmp_token = jmp_token_0 = 
-	(unsigned char *) xcalloc (strlen (b_stream), sizeof (char));
+      base_tokens = p_token = p_token_0 = (unsigned char *) xcalloc (strlen (b_stream), sizeof (char));
 
-      jmp_stream     = (unsigned char *)b_stream;
-      apg_input_code = c_index[*jmp_stream];
+      p_stream = (unsigned char *) b_stream;
+      apg_input_code = c_index[*p_stream];
     }
 
   while ((tk = get_token ()))
     {
 
-	switch(apg_token)
+      switch (apg_token)
 	{
 
-	case 0: /* null */
-	break;
-	
-	case 1: /* label line */
+	case 0:		/* null */
+	 break;
+
+	case 1:		/* label line */
 
 	  /* before parsing the new line, we check the shift register in
-             order to detect non-optional NULL token */
+	     order to detect which token can be NULL */
 
-          if (apg_stream)
-          for (j=1; j< APG_MAXARG ; j++)
-                  if ( L_OPT(apg_stream->type_line,j) && ~shift_reg & (1<<j) )
-                  token_fatalerr (apg_stream->type_line,j, 
-                                  L_TYPE (apg_stream->type_line,j), 
-                                  APG_NULL_ERR, 
-                                  L_LOW (apg_stream->type_line,j), 
-                                  L_HIGH (apg_stream->type_line,j), NULL);
+	  if (apg_stream)
+	    for (j = 1; j < APG_MAXARG; j++)
+	      if ( L_OPT (apg_stream->type_line, j) && ~shift_reg & (1 << j))
+		token_fatalerr (apg_stream->type_line, j,
+				L_TYPE (apg_stream->type_line, j),
+				APG_NULL_ERR,
+				L_LOW (apg_stream->type_line, j),
+				L_HIGH (apg_stream->type_line, j), NULL);
 
 
-          shift_reg = 0; /* clear */
+	  shift_reg = 0;	/* clear */
 
 	  apg_stream = alloc_segment (apg_stream);
-	  apg_stream->type_line = get_lineid (tk);
+	  apg_stream->type_line = b_search (tk);
 
-/* man rep
-*/
+/* man rep */
 
 	  rep_counter[apg_stream->type_line]++;
 
 	  if (rep_limits[apg_stream->type_line][1] != -1 &&
 	      rep_counter[apg_stream->type_line] >
 	      rep_limits[apg_stream->type_line][1])
-       		token_fatalerr ( apg_stream->type_line,  
-                	        0, 
-                        	0,
-                        	APG_MANY_ERR,
-                        	0, 
-                        	rep_limits[apg_stream->type_line][1],
-                        	NULL);
+	    token_fatalerr (apg_stream->type_line,
+			    0,
+			    0,
+			    APG_MANY_ERR,
+			    0, rep_limits[apg_stream->type_line][1], NULL);
 
-	break;
-	default: /* token */
+	  break;
+	default:		/* token */
 
-        /* shift_reg setup: (apg_token == 1 ? line_id : token_id) */
+	  /* shift_reg setup: (apg_token == 1 ? line_id : token_id) */
 
-        if (tk && *tk)
-        shift_reg |= 1 << (apg_token-1);
+	  if (*tk)
+	    shift_reg |= 1 << (apg_token - 1);
 
-	token_analysis (tk, apg_stream->type_line, apg_token - 1);
+	  token_analysis (tk, apg_stream->type_line, apg_token - 1);
 
-	break;
+	  break;
 	}
     }
 
-    /* now we check the last line */
+  /* now we check the last line */
 
-          if (apg_stream)
-          for (j=1; j< APG_MAXARG ; j++)
-                  if ( L_OPT(apg_stream->type_line,j) && ~shift_reg & (1<<j) )
-                  token_fatalerr (apg_stream->type_line,j, 
-                                  L_TYPE (apg_stream->type_line,j), 
-                                  APG_NULL_ERR,
-                                  L_LOW (apg_stream->type_line,j), 
-                                  L_HIGH (apg_stream->type_line,j), NULL);
+  if (apg_stream)
+    for (j = 1; j < APG_MAXARG; j++)
+      if (L_OPT (apg_stream->type_line, j) && ~shift_reg & (1 << j))
+	token_fatalerr (apg_stream->type_line, j,
+			L_TYPE (apg_stream->type_line, j),
+			APG_NULL_ERR,
+			L_LOW (apg_stream->type_line, j),
+			L_HIGH (apg_stream->type_line, j), NULL);
 
 
-/* min rep
-*/
+/* min rep */
 
   {
     register int i = 1;
-    for (; line_list[i]; i++)
+    for (; i <= QMAX_ELEM; i++)
       if (rep_limits[i][0] != -1 && rep_counter[i] < rep_limits[i][0])
-       token_fatalerr (	i, 
-			0, 
-			0, 
-			APG_FEW_ERR, 
-			rep_limits[i][0], 
-			0, 
-			NULL);
+	token_fatalerr (i, 0, 0, APG_FEW_ERR, rep_limits[i][0], 0, NULL);
   }
 
-  free (token_basebuffer);
+  free (base_tokens);
   ioctl_buffer (NULL, APG_CLOSE);
 
   apg_flags |= APG_PARSED_GRILL;
 
-  if ( apg_flags & APG_FATALERR )
-	fatalerr("apg_parser(): encontered some errors"); 
+  if (apg_flags & APG_FATALERR)
+    fatalerr ("apg_parser(): encontered some errors");
 
-#ifdef APG_PERF
-  {
-  elapsed_val diff;
-  double d=0, r=0;
-
-  gettimeofday (&end_time, NULL);
-  difftimeofday (end_time, start_time, &diff);
-
-  d = (double)(end_time.tv_sec - start_time.tv_sec) +
-      (double)(end_time.tv_usec - start_time.tv_usec)/1000000;
-
-  r = (d ? (double)global_token/d : 999999999 );
-
-  fprintf(stderr,"apg_parser(): token=%d overal_time=%02d:%02d,%02d tps=%d\n",
-                global_token,diff.min, diff.sec, diff.dec, (int)r);
-
-  }
-#endif
 
   return apg_arena;
 
