@@ -125,7 +125,11 @@ checkpass (unsigned char *a)
       memset (md5,  0, 17);
       memset (buff, 0, 33);
 
-      if ((ptr = ndp_strstr (a, "pass ")))
+      ptr = (char *)a;
+
+      while (*ptr ==0x20) ptr++;
+
+      if ((ptr == ndp_strstr (ptr, "pass ")))
 	{
 	      /* we're serving a irc-client */
 

@@ -31,6 +31,8 @@ parse_input (char *input, long *host, unsigned short *port)
       *host = 0;
       *port = 0;
 
+
+
       while ((*(input) == 0x20))
 	    input++;
 
@@ -68,6 +70,7 @@ parse_irc (char *buff, char **argz)
       register short int j = 0;
 
       short int   out = 0;
+
 
       argz[i++] = buff;
       while (*buff && (i < _MAXARGLINE_ - 1))
