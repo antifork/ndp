@@ -19,9 +19,20 @@
  *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *
  */
-#include <defs.h>
-#include <std.h>
-#include <util.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+
+#include <errno.h>
+#include <stdarg.h>
+
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+
+#include <netinet/in.h>
+#include <netdb.h>
 
 #ifdef LRU
 #error "LRU already defined in some header."
@@ -32,6 +43,7 @@
 #define LRU  64 
 #endif
 
+#define MAXALIAS 16
 
 /* test */
 
@@ -70,7 +82,11 @@ typedef struct _lru_
 {
 
   unsigned int yday; /* day of the year */
-  unsigned long addr;
+  unsigned long addr[MAXALIAS];
+
+  int  id;
+  int  idmax;
+
   char *host;
 
 }
@@ -128,31 +144,53 @@ search_hostbyname (const char *host)
   register int i = 0;
   register long ret = -1;
 
+  /* i = hash (..) */
+
   i = hash(host, strlen(host));
 
-  /* null */
+  /* null ? */
 
   if ( hostbyname[i].host == NULL )
         return ret;
 
-  if ( !strcmp(host,hostbyname[i].host ))
-        ret= hostbyname[i].addr;
+  /* reset */
 
+  if ( hostbyname[i].id == hostbyname[i].idmax )
+	{
+	hostbyname[i].id = 0;
+	}
+
+  if ( !strcmp(host,hostbyname[i].host ))
+        {
+	ret= hostbyname[i].addr[hostbyname[i].id];
+	hostbyname[i].id++;
+	}
+	
         return ret;
 
 }
 
 static void
-insert_hostbyname (const char *h, const unsigned long addr)
+insert_hostbyname (const char *h, char ** addr_list, int h_length)
 {
-  register int i;
+  register int i,j;
 
   i = hash(h, strlen(h));
 
   SFREE(hostbyname[i].host);
 
   hostbyname[i].host = strdup (h);
-  hostbyname[i].addr = addr;
+
+  j=0;
+
+  while ( addr_list[j] && j < MAXALIAS)
+  { 
+     bcopy (addr_list[j], (char *) &hostbyname[i].addr[j], h_length);
+     j++;
+     hostbyname[i].idmax++;
+  }
+   
+  hostbyname[i].id=1;
 
   return;
 }
@@ -171,7 +209,7 @@ search_hostbyaddr (const unsigned long addr)
 
   i= hash ((char *)&addr,sizeof(long int));
 
-  if (addr == hostbyaddr[i].addr)
+  if (addr == hostbyaddr[i].addr[0])
       {
       ret = strdup (hostbyaddr[i].host);
       }
@@ -189,7 +227,7 @@ insert_hostbyaddr (const char *h, const unsigned long addr)
   SFREE (hostbyaddr[i].host);
 
   hostbyaddr[i].host = strdup (h);
-  hostbyaddr[i].addr = addr;
+  hostbyaddr[i].addr[0] = addr;
 
   return;
 }
@@ -221,9 +259,10 @@ gethostbyname_lru (const char *host)
             fatalerr ("gethostbyname_lru err:%s", strerror (errno));
 
           bcopy (host_ent->h_addr, (char *) &addr.s_addr, host_ent->h_length);
+          insert_hostbyname (host, host_ent->h_addr_list,host_ent->h_length );
+
         }
 
-      insert_hostbyname (host, addr.s_addr);
       return addr.s_addr;
 
     }
@@ -290,7 +329,7 @@ multi_inet_nbotoa (unsigned long address)
     (char *) realloc (buff[bit_flag_ % N_STATIC_BUFF], 16);
   memset (buff[bit_flag_ % N_STATIC_BUFF], 0, 16);
   memcpy (buff[bit_flag_ % N_STATIC_BUFF],
-	  (char *) inet_ntoa (*(struct in_addr *) &address), 15);
+          (char *) inet_ntoa (*(struct in_addr *) &address), 15);
 
   return (char *) buff[bit_flag_ % N_STATIC_BUFF];
 
@@ -310,11 +349,11 @@ strmrg (char *buff_1, char *buff_2)
       s_1 = strlen (_ptr1);
 
       if (_ptr1 == _pbuf)
-	{
-	  _ptr1 = alloca (s_1 + 1);
-	  *(_ptr1 + s_1) = '\0';
-	  memcpy (_ptr1, buff_1, s_1);
-	}
+        {
+          _ptr1 = alloca (s_1 + 1);
+          *(_ptr1 + s_1) = '\0';
+          memcpy (_ptr1, buff_1, s_1);
+        }
     }
 
   if (_ptr2)
@@ -323,11 +362,11 @@ strmrg (char *buff_1, char *buff_2)
       s_2 = strlen (_ptr2);
 
       if (_ptr2 == _pbuf)
-	{
-	  _ptr2 = alloca (s_2 + 1);
-	  *(_ptr2 + s_2) = '\0';
-	  memcpy (_ptr2, buff_2, s_2);
-	}
+        {
+          _ptr2 = alloca (s_2 + 1);
+          *(_ptr2 + s_2) = '\0';
+          memcpy (_ptr2, buff_2, s_2);
+        }
     }
 
 
