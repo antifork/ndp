@@ -925,8 +925,7 @@ main (int argc, char *argv[])
 
     signal (SIGSEGV, SIG_IGN);
     signal (SIGPIPE, SIG_IGN);	/* write/send to a broken pipe terminates the process */
-    signal (SIGURG, SIG_IGN);
-    signal (SIGHUP, SIG_IGN);
+    signal (SIGURG,  SIG_IGN);
 
     if (ndp.opts & OPT_CONF)
 	parseconf (CONF);

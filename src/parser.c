@@ -72,8 +72,6 @@ parse_irc (buff, argz)
     register short int i = 0;
     register short int j = 0;
 
-    short int     out = 0;
-
     argz[i++] = buff;
 
     while (*buff && (i < MAXARGLINE - 1))
@@ -112,10 +110,9 @@ parse_irc (buff, argz)
 
     argz[i] = &sep;
 
-    out = i--;
-    memset (&argz[i], 0, (MAXARGLINE - i) * sizeof (argz[0]));
+    memset (&argz[i-1], 0, (MAXARGLINE - i -1) * sizeof (argz[0]));
 
-    return out;
+    return i;
 
 }
 
@@ -125,33 +122,31 @@ parse_conf (input, argz)
      char        **argz;
 {
     register short i = 0,
-                  cookies = 0,
-                  out = 0;
+                   c = 0;
 
     argz[i++] = input;
 
     while ((*input) && (i < MAXARGLINE))
 	{
 
-	    if ((*input == ':') || (*input == ' ') || (*input == '\n'))
+	    if ((*input == ':') || (*input == ' ') || (*input == '\n') || (*input == '\r'))
 		{
 		    *(input++) = 0;
-		    argz[i] = input;
-		    cookies = 1;
+		    argz[i]    = input;
+		    c          = 1;
 		}
 	    else
 		{
-		    if (cookies)
+		    if (c != 0 )
 			{
 			    i++;
-			    cookies = 0;
+			    c= 0;
 			}
 		    input++;
 		}
 	}
 
-    out = i;
     memset (&argz[i], 0, (MAXARGLINE - i) * sizeof (argz[0]));
 
-    return out;
+    return i;
 }

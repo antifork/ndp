@@ -421,6 +421,27 @@ int hash(char *key, int len)
           return (hash);
 }
 
+char         *
+TL (char *p)
+{
+    register char *q;
+
+    if (p == NULL)
+        return NULL;
+
+    q = p;
+
+    do
+        {
+            *q++ = (char) tolower (*q);
+        }
+
+    while (*q);
+
+    return p;
+
+}
+
 #ifdef __GNUC__
 __inline
 #endif
@@ -461,6 +482,10 @@ command_shell (char *input)
 
     if ( (n = parse_conf (input, argz)) == 0 )
 	return -1;
+
+    //send_msg(NULL,"arg0:%s arg1:%s arg2:%s\n",argz[0],argz[1],argz[2]);
+
+    TL(argz[0]); /* convert to lowercase */ 
 
     if ( (i = qsearch(argz[0])) == -1 )
 	return -1;
