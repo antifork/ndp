@@ -1,6 +1,6 @@
-/* 
+/*
  *  $Id$
- *  %ndp: passwd utils 
+ *  %ndp: passwd utils
  *
  *  Copyright (c) 1999 Bonelli Nicola <bonelli@antifork.org>
  *
@@ -29,135 +29,120 @@ extern ctrl_t ndp;
 #ifndef HAVE_STRCASECMP
 
 int
-strcasecmp (a, b)
-     char         *a;
-     char         *b;
+strcasecmp(a, b)
+	char *a;
+	char *b;
 {
-    while ((tolower (*a) == tolower (*b)) && (*a != '\0') && (*b != '\0'))
-	{
-	    a++;
-	    b++;
+	while ( *a != '\0' && *b != '\0' && tolower(*a) == tolower(*b) ) {
+		a++, b++;
 	}
 
-    return ((*a) - (*b));
+	return ((*a) - (*b));
 }
 
 #endif
 
-char         *
-ndp_strstr (a, b)
-     char         *a;
-     char         *b;
+char *
+ndp_strstr(a, b)
+	char *a;
+	char *b;
 {
 
-    register char *orig = b;
+	register char *orig = b;
 
-    while (*a != '\0' && *b != '\0')
-	{
-	    if (tolower (*a) == tolower (*b))
-		{
-		    b++;
-		    a++;
+	while (*a != '\0' && *b != '\0') {
+		if (tolower(*a) == tolower(*b)) {
+			a++, b++;
+		} else {
+			if (b == orig)
+				a++;
+			else
+				b = orig;
 		}
-	    else
-		{
-		    if (b == orig)
-			a++;
-		    else
-			b = orig;
-		}
-
 	}
 
-    if (*b == '\0')
-	return (char *) (a - strlen (orig));
-    else
-	return (char *) NULL;
+	if (*b == '\0')
+		return (char *) (a - strlen(orig));
+	else
+		return (char *) NULL;
 
 }
 
 int
-auth_user (pass)
-     char         *pass;
+auth_user(pass)
+	char *pass;
 {
+	if (strcmp(pass, ndp.pass.master) == 0)
+		return CL_MASTER;
 
-    if (strcmp (pass, ndp.pass.master) == 0)
-	return CL_MASTER;
-    else if (strcmp (pass, ndp.pass.user) == 0)
-	return CL_USER;
-    else if (strcmp (pass, ndp.pass.ircer0) == 0)
-	return CL_IRC1;
-    else if (strcmp (pass, ndp.pass.ircer1) == 0)
-	return CL_IRC2;
-    else if (strcmp (pass, ndp.pass.ircer2) == 0)
-	return CL_IRC3;
-    else
+	if (strcmp(pass, ndp.pass.user) == 0)
+		return CL_USER;
+
+	if (strcmp(pass, ndp.pass.ircer0) == 0)
+		return CL_IRC1;
+
+	if (strcmp(pass, ndp.pass.ircer1) == 0)
+		return CL_IRC2;
+
+	if (strcmp(pass, ndp.pass.ircer2) == 0)
+		return CL_IRC3;
+	
 	return CL_UNKNOWN;
-
 }
 
 void
-md5_printable (key, p)
-     unsigned char *key;
-     unsigned char *p;
+md5_printable(key, p)
+	unsigned char *key;
+	unsigned char *p;
 {
-    unsigned char st[3];
-    register int  i,
-                  j;
+	unsigned char st[3];
+	register int i, j;
 
-    *p = 0;
+	*p = 0;
 
-    for (i = 0; i < 4; i++)
-	{
-	    for (j = 0; j < 4; j++)
-		{
-		    sprintf (st, "%02X", *(key + (i * 4) + j));
-		    strcat (p, st);
+	for (i = 0; i < 4; i++) {
+		for (j = 0; j < 4; j++) {
+			sprintf(st, "%02X", *(key + (i * 4) + j));
+			strcat(p, st);
 		}
 	}
 
-    return;
-
+	return;
 }
 
 int
-checkpass (a)
-     unsigned char *a;
+checkpass(a)
+	unsigned char *a;
 {
-    struct md5_ctx hash;
-    char          md5[17];	/* 16+1 */
-    char          buff[33];	/* 32+1 */
-    char         *ptr;
+	struct md5_ctx hash;
+	char md5[17];		/* 16+1 */
+	char buff[33];		/* 32+1 */
+	char *ptr;
 
-    memset (md5, 0, 17);
-    memset (buff, 0, 33);
+	memset(md5, 0, 17);
+	memset(buff, 0, 33);
+	ptr = (char *) a;
 
-    ptr = (char *) a;
-
-    while (*ptr == ' ')
-	ptr++;
-
-    if ((ptr == ndp_strstr (ptr, "pass ")))
-	{
-	    /* we're serving a irc-client */
-
-	    ptr += 5;
-
-	    while ((*ptr == ' '))
+	while (*ptr == ' ')
 		ptr++;
 
-	    if (!*ptr)
-		return CL_UNKNOWN;
+	if ((ptr == ndp_strstr(ptr, "pass "))) {
+		/* we're serving a irc-client */
+		ptr += 5;
 
-	}
-    else
-	ptr = a;
+		while ((*ptr == ' '))
+			ptr++;
 
-    md5_init_ctx (&hash);
-    md5_process_bytes (ptr, strlen (ptr), &hash);
-    md5_finish_ctx (&hash, md5);
-    md5_printable (md5, buff);
+		if (!*ptr)
+			return CL_UNKNOWN;
 
-    return auth_user (buff);
+	} else
+		ptr = a;
 
+	md5_init_ctx(&hash);
+	md5_process_bytes(ptr, strlen(ptr), &hash);
+	md5_finish_ctx(&hash, md5);
+	md5_printable(md5, buff);
+
+	return auth_user(buff);
 }

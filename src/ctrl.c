@@ -1,6 +1,6 @@
-/* 
+/*
  *  $Id$
- *  %ndp: string utils 
+ *  %ndp: string utils
  *
  *  Copyright (c) 1999 Bonelli Nicola <bonelli@antifork.org>
  *
@@ -24,58 +24,40 @@
 #include <ctrl.h>
 
 void
-void_cr_lf (ptr, mode)
-     u_char       *ptr;
-     int           mode;
+void_cr_lf(ptr, mode)
+	u_char *ptr;
+	int mode;
 {
-    char         *ptr_1,
-                 *ptr_2;
+	if (ptr == NULL)
+		return;
 
-    if (ptr == NULL)
-	return;
-
-    while (*ptr)
-	{
-
-	    ptr_1 = ptr + 1;
-	    ptr_2 = ptr + 2;
-
-	    if (mode)
-		{
-
-		    if ((*ptr == 0xf2) && (!*ptr_1 || (*ptr_1 == 0x0d)))
-			*ptr = 0x00;
-		}
-
-	    else
-		{
-		    if (((*ptr == 0x0a) || (*ptr == 0x0d)) && (!*ptr_1 || !*ptr_2))
-			{
-			    *ptr = 0x00;
-			    return;
+	for (; *ptr != '\0' ; ptr++) {
+		if (mode) {
+			if ((*ptr == 0xf2) && ( *(ptr+1) == '\0' || (*(ptr+1) == 0x0d)))
+				*ptr = '\0';
+		} else {
+			if (((*ptr == 0x0a) || (*ptr == 0x0d)) && (*(ptr+1)== '\0' || *(ptr+2) == '\0')) {
+				*ptr = '\0';
+				return;
 			}
 		}
-
-	    ptr++;
-
 	}
-    return;
+	return;
 }
 
 
 char
-getlastchar (buff)
-     u_char       *buff;
+getlastchar(buff)
+	u_char *buff;
 {
-    if (buff == NULL)
-	return 0;
+	if (buff == NULL)
+		return 0;
 
-    while (*buff != '\0')
-	{
-	    if (*buff == '\n')
-		*(buff + 1) = '\0';
-	    buff++;
+	while (*buff != '\0') {
+		if (*buff == '\n')
+			*(buff + 1) = '\0';
+		buff++;
 	}
 
-    return (char) *(--buff);
+	return (char) *(--buff);
 }

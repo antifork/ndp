@@ -20,10 +20,10 @@
 #
 
 CC = @CC@
-CFLAGS = @CFLAGS@ -I../include # -include /usr/include/almepro.h 
+CFLAGS = -Wall @CFLAGS@ -I../include # -include /usr/include/almepro.h 
 LIBS = @LIBS@ # -lalmepro
 
-OBJS = ndp.o socket.o util.o md5.o irc.o passwd.o \
+OBJS = ndp.o socket.o ns-cache.o md5.o irc.o passwd.o \
 command.o parser.o messager.o ctrl.o ndp.par.o parseconf.o cmpt.o time.o usage.o @ALLOCA@ @GNU_ADDON_OBJ@
 
 

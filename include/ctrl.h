@@ -23,10 +23,5 @@
 #include "defs.h"
 #include "std.h"
 #include "channel.h"
-
-/*
-*/
-
-void            void_cr_lf 	(u_char *,int);
-char            getlastchar 	(u_char *);
+#include "prototype.h"
 

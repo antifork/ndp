@@ -36,6 +36,6 @@ src/ndp: version.h
 	@./header
 	cd src/ && make
 clean:
-	rm -f src/*BAK src/*~ src/*.o ndp passwd_ndp ndp.pid 
+	rm -Rf src/*BAK src/*~ src/*.o ndp passwd_ndp ndp.pid 
 distclean:
-	rm -f *.log *.cache src/Makefile src/*BAK src/*~ include/{defs,version}.h src/*.o ndp passwd_ndp ndp.pid 
+	rm -Rf *.log *.cache src/Makefile src/*BAK src/*~ include/{defs,version}.h src/*.o ndp passwd_ndp ndp.pid 

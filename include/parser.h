@@ -23,13 +23,4 @@
 #include "defs.h"
 #include "std.h"
 #include "ndp.h"
-
-/*
-*/
-
-int             parse_input             (char *, long *, unsigned short *);
-int             parse_irc        	(char *, char **);
-int             parse_conf              (char *, char **);
-long            getlongbyname           (unsigned char * );
-int             ndp_strcmp 		(char *, char *, int);
-
+#include "prototype.h"

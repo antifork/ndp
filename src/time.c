@@ -1,6 +1,6 @@
-/* 
+/*
  *  $Id$
- *  %ndp: time tools 
+ *  %ndp: time tools
  *
  *  Copyright (c) 1999 Bonelli Nicola <bonelli@antifork.org>
  *
@@ -26,36 +26,27 @@
 #include <channel.h>
 
 extern chan_t *p_chan;
-
 extern struct timeval mytime;
 
-/* prototypes */
-
-int diff_time __P ((long, long));
-void rehash_time __P ((void));
-
-
 int
-diff_time (now, old)
-     long          now;
-     long          old;
+diff_time(now, old)
+	long now;
+	long old;
 {
-    return ((now - old) > 0 ? (now - old) : (0));
+	return ((now - old) > 0 ? (now - old) : (0));
 }
 
 void
-rehash_time ()
+rehash_time()
 {
 /* rehash mytime: sec/usec or sec/0 due to the presence of GETTIMEOFDAY or less */
 
 #ifdef HAVE_GETTIMEOFDAY
-    gettimeofday (&mytime, NULL);
+	gettimeofday(&mytime, NULL);
 #else
-    mytime.tv_sec = time (NULL);
-    mytime.tv_usec = 0;
+	mytime.tv_sec = time(NULL);
+	mytime.tv_usec = 0;
 #endif
-
-    p_chan->sec = mytime.tv_sec;
-
-    return;
+	p_chan->sec = mytime.tv_sec;
+	return;
 }

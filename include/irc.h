@@ -24,14 +24,5 @@
 #include "std.h"
 #include "channel.h"
 #include "ndp.h"
-
-/*
-*/
-
-int             match_irc 	(char *);
-char           *mystrstr        (char *, char *);
-int             irc_postlogin 	(void);
-void            irc_controller 	(char *);
-int             parse_irc       (char *, char **);
-void    	stream_guesser	(char *);
+#include "prototype.h"
 

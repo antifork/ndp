@@ -1,6 +1,6 @@
 /*
  *  $Id$
- *  %ndp: parseconf 
+ *  %ndp: parseconf
  *
  *  Copyright (c) 1999 Bonelli Nicola <bonelli@antifork.org>
  *
@@ -23,96 +23,74 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <conf.h>
+#include <ns-cache.h>
 
 #include "ndp.tab.h"
 
-extern ctrl_t	ndp;
-extern char     opts;
-static char     bufftmp[CHAN_SBUFF];
+extern ctrl_t ndp;
+extern char opts;
 
 int
-parseconf ( config )
-     char           *config;
+parse_config(config)
+	char *config;
 {
-      int             i;
-      grill_t        *ptr;
+	int i;
+	grill_t *ptr;
 
-      ptr = ( grill_t * ) apg_parser ( 1, config );
+	ptr = (grill_t *) apg_parser(1, config);
+	while ((i = apg_get_line(&ptr)))
+		switch (i) {
+			/*
+		         * members can be deferenced through ptr->line_tag
+		         */
+		case if_label:
+			ndp.lhost = ptr->if_ip;
 
-      while ( ( i = apg_get_line ( &ptr ) ) )
-	    switch ( i )
-		  {
-			 /*
-			  * members can be deferenced through ptr->line_tag 
-			  */
+			if (ptr->if_ip)
+				ndp.nbo_lhost = gethostbyname_cache(ndp.lhost);
+			ndp.lport = ptr->if_port;
 
-		   case if_label:
-
-			 ndp.lhost = ptr->if_ip;
-
-			 if ( ptr->if_ip )
-			       ndp.nbo_lhost = gethostbyname_lru ( ndp.lhost );
-			 ndp.lport = ptr->if_port;
-
-			 if ( ptr->if_vhost != NULL )
-			       {
-				     ndp.vhost     = ptr->if_vhost;
-				     ndp.nbo_vhost = gethostbyname_lru ( ndp.vhost );
-			       }
-			 break;
-
-		   case feature_label:
-
-			 ndp.conf.idle = ptr->feature_idle;
-			 ndp.conf.idlep = ptr->feature_idlep;
-			 ndp.conf.maxuser = ptr->feature_maxuser;
-			 ndp.conf.maxerr = ptr->feature_maxerr;
-
-			 break;
-
-		   case master_label:
-			 ndp.pass.master = ptr->master_passwd;
-
-			 break;
-
-		   case user_label:
-			 ndp.pass.user = ptr->user_passwd;
-
-			 break;
-
-		   case ircer0_label:
-			 ndp.pass.ircer0 = ptr->ircer0_passwd;
-
-			 break;
-
-		   case ircer1_label:
-			 ndp.pass.ircer1 = ptr->ircer1_passwd;
-			 ndp.ivhost      = ptr->ircer1_vhost;
-
-			 break;
-
-		   case ircer2_label:
-			 ndp.pass.ircer2 = ptr->ircer2_passwd;
-			 ndp.jvhost      = ptr->ircer2_vhost;
-			 ndp.rhost       = ptr->ircer2_lhost;
-
-			 ndp.nbo_jvhost  = gethostbyname_lru ( ndp.jvhost );
-			 ndp.nbo_rhost   = gethostbyname_lru ( ndp.rhost );
-			 ndp.rport       = ptr->ircer2_port;
-
-			 break;
-
-		   case oport_label:
-			 ndp.conf.lp_irc = ptr->oport_low;
-			 ndp.conf.hp_irc = ptr->oport_high;
-			 if ( ndp.conf.lp_irc > ndp.conf.hp_irc )
-			       {
-				     fprintf ( stderr, "err label(oport): low > high ? ; exit forced\n" );
-				     exit ( 1 );
-			       }
-			 break;
-		  }
-
-      apg_free_grill ( ptr );
-
+			if (ptr->if_vhost != NULL) {
+				ndp.vhost = ptr->if_vhost;
+				ndp.nbo_vhost = gethostbyname_cache(ndp.vhost);
+			}
+			break;
+		case feature_label:
+			ndp.conf.idle = ptr->feature_idle;
+			ndp.conf.idlep = ptr->feature_idlep;
+			ndp.conf.maxuser = ptr->feature_maxuser;
+			ndp.conf.maxerr = ptr->feature_maxerr;
+			break;
+		case master_label:
+			ndp.pass.master = ptr->master_passwd;
+			break;
+		case user_label:
+			ndp.pass.user = ptr->user_passwd;
+			break;
+		case ircer0_label:
+			ndp.pass.ircer0 = ptr->ircer0_passwd;
+			break;
+		case ircer1_label:
+			ndp.pass.ircer1 = ptr->ircer1_passwd;
+			ndp.ivhost = ptr->ircer1_vhost;
+			break;
+		case ircer2_label:
+			ndp.pass.ircer2 = ptr->ircer2_passwd;
+			ndp.jvhost = ptr->ircer2_vhost;
+			ndp.rhost = ptr->ircer2_lhost;
+			ndp.nbo_jvhost = gethostbyname_cache(ndp.jvhost);
+			ndp.nbo_rhost = gethostbyname_cache(ndp.rhost);
+			ndp.rport = ptr->ircer2_port;
+			break;
+		case oport_label:
+			ndp.conf.lp_irc = ptr->oport_low;
+			ndp.conf.hp_irc = ptr->oport_high;
+			if (ndp.conf.lp_irc > ndp.conf.hp_irc) {
+				fprintf(stderr, "err label(oport): low > high ? ; exit forced\n");
+				exit(1);
+			}
+			break;
+		}
+	apg_free_grill(ptr);
+	return 1;
 }

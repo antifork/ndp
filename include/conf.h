@@ -24,11 +24,5 @@
 #include "std.h"
 #include "ndp.h"
 #include "channel.h"
-
-/*
-*/
-int     ndp_strcmp      (char *, char *, int);
-void    readconf        (char *);
-long    getlongbyname   (unsigned char *);
-int     parse_conf      (char *, char **);
+#include "prototype.h"
 

@@ -25,9 +25,5 @@
 #include "std.h"
 #include "channel.h"
 #include "ndp.h"
-
-
-/*
-*/
-int     send_msg        (chan_t *, char *, ...);
+#include "prototype.h"
 

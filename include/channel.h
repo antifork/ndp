@@ -20,33 +20,37 @@
  *
  */
 
+#ifndef CHANNEL_H
+#define CHANNEL_H
+
 #define	CHAN_SBUFF	1024
 #define CHAN_SNICK 	12
 #define CHAN_SUSR	80
 #define CHAN_SPRPT	80 
 
-
 typedef struct _channel_ {
-	int             	state;
-	u_char   		bufin [CHAN_SBUFF];
-	u_char   		bufout[CHAN_SBUFF];
+	u_char  bufin [CHAN_SBUFF];
+	u_char  bufout[CHAN_SBUFF];
+        u_char  nick  [CHAN_SNICK];
+        u_char  name  [CHAN_SUSR ];
+        u_char  prompt[CHAN_SPRPT];
+	u_char  *tmp;
 
-	u_char   		*tmp;
-	int			tmp_size;
+        long    sec;
 
-	int             	fd_out;
-	int             	fd_in;
-	long            	sec;
-	char            	trial;
-	int             	opts;
-	char            	class;
+        int     state;
+	int	tmp_size;
+	int     fd_out;
+	int     fd_in;
+	int     opts;
 
-	u_char          	nick  [CHAN_SNICK];
-	u_char          	name  [CHAN_SUSR ];
-	u_char			prompt[CHAN_SPRPT];
 	struct sockaddr_in 	o_addr;
 	struct sockaddr_in 	c_addr;
 	struct _channel_ 	*next;
+
+	char    trial;
+        char    class;
+
 } chan_t;
 
 typedef struct _ndp_conf_ {
@@ -79,11 +83,13 @@ typedef struct _ndp_conf_ {
 	unsigned long   nbo_ivhost;
 	unsigned long   nbo_jvhost;
 	unsigned long   nbo_rhost;
-
 	unsigned short  lport;
 	unsigned short  rport;
 
-	short		log_level;
 	int		opts;
 
+        short           log_level;
+
 } ctrl_t;
+
+#endif /* CHANNEL_H */

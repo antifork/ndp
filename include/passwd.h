@@ -24,12 +24,4 @@
 #include "std.h"
 #include "ndp.h"
 #include "channel.h"
-
-/*
-*/
-
-int             ndp_strcmp      (char *, char *, int);
-char           *ndp_strstr      (char *, char *);
-int             checkpass       (unsigned char *);
-int             auth_user       (char *pass);
-
+#include "prototype.h"

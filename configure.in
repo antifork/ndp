@@ -21,6 +21,8 @@ if test $ac_cv_prog_gcc = yes; then
     CFLAGS="$CCOPTS"
 fi
 
+CFLAGS="$CFLAGS -D_USE_NSHACK"
+
 dnl Checks for header files.
 
 AC_HEADER_STDC

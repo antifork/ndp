@@ -25,53 +25,9 @@
 #include "ndp.h"
 #include "std.h"
 #include "channel.h"
-#include <pwd.h>
+#include "prototype.h"
 
+#include <pwd.h>
 #if defined(HAVE_SYS_SELECT_H) 
 #include <sys/select.h>
 #endif
-
-/*
-*/
-
-int 	accept_client      	(void);
-int 	handle_link        	(void);
-int 	setup_dialer       	(void);
-int 	connect_target     	(void);
-int 	ushell			(void);
-
-
-int  	get_class       	(int);
-
-void 	void_chan          	(chan_t * );
-void 	reset_chan         	(chan_t * );
-void 	add_chan           	(chan_t * );
-
-void 	server             	(void);
-void 	_quit              	(int);
-
-void	rehash_time 		(void);
-void	halfshutdown_ 		(chan_t *);
-void	shutdown_       	(chan_t *);
-void	set_nonblock 		(int);
-void	set_block		(int);
-void	usage 			(char *, char *, char *);
-int	irc_postlogin 		(void);
-void	stream_guesser  	(char *);
-void	readconf        	(char *);
-void	create_dialer_sock	(chan_t *,long,long,int);
-
-void	rehash_time             (void);
-void	irc_controller          (u_char *);
-void	welcome                 (void);
-void	void_cr_lf              (u_char *, int);
-int	parse_input     	(u_char *, long *, unsigned short *);
-int	checkpass               (u_char *);
-int	command_shell           (u_char *);
-int	read_chan       	(int , u_char *);
-int	write_chan        	(int , u_char *, int);
-int	send_msg                (chan_t *, char *, ...);
-int	diff_time               (long, long);
-
-u_char	getlastchar             (u_char *);
-

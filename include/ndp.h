@@ -20,6 +20,10 @@
  *
  */
 
+
+#ifndef NDP_H
+#define NDP_H
+
 #include "version.h"
 
 #define PIDFILE        "ndp.pid"
@@ -33,7 +37,6 @@
 #define OPT_MERRPASS  		5
 
 // bits for p_chan->flag
-
 
 #define S_NULL			0xff	/* keep the current state */
 
@@ -82,7 +85,7 @@
 #define MSG_MAXUSER		"number of user exceed. Try later\n" 
 #define MSG_MAXTRIAL    	"MAXERRONPASS: bye\n"	
 #define MSG_ERRPARSE		"syntax error. retry\n"    	
-#define MSG_CONNECTING  	"connecting %s:%d ...\n",multi_inet_nbotoa (p_chan->o_addr.sin_addr.s_addr), \
+#define MSG_CONNECTING  	"connecting %s:%d ...\n",safe_inet_ntoa(p_chan->o_addr.sin_addr.s_addr), \
 				ntohs (p_chan->o_addr.sin_port)
 	
 #define MSG_ESTABLISHED 	"connection established\n"	
@@ -100,4 +103,4 @@
 #define CL_IRC3		0x10
 #define CL_UNKNOWN   	0x20 
 
-
+#endif /* NDP_H */

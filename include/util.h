@@ -21,10 +21,4 @@
  */
 
 #include "defs.h"
-//#include "std.h"
-
-unsigned long   getlongbyname          	(unsigned char *);
-char           *getnamebynbo		(u_long addr);
-char 		*multi_inet_nbotoa      (unsigned long );
-char		*strmrg 		(char *, char *);
 
