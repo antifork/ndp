@@ -247,8 +247,9 @@ gethostbyaddr_lru (unsigned long addr)
   if (addr == 0) return "0.0.0.0";
 
 
-  if (!(opt & OPT_NUM))
+/*  if (!(opt & OPT_NUM))
     {
+*/
 
       if ((ret = search_hostbyaddr (addr)) != NULL)
         /* hit */
@@ -262,9 +263,10 @@ gethostbyaddr_lru (unsigned long addr)
       else
         ret = strdup (inet_ntoa (*(struct in_addr *) &addr));
 
-    }
-  else
+/*   }
+   else
     ret = strdup (inet_ntoa (*(struct in_addr *) &addr));
+*/
 
   if (ret && addr)
     insert_hostbyaddr (ret, addr);
