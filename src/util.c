@@ -23,23 +23,61 @@
 #include <std.h>
 #include <util.h>
 
-#define MAX_LRU         16
+#ifdef LRU
+#error "LRU already defined in some header."
+#else
+/* LRU must be a power of 2, and cannot be longer than 65536 elements. 
+   Better performances can be obtained with a size over 32 ( 64 or 128).
+*/
+#define LRU  64 
+#endif
 
+
+/* test */
+
+#if!(LRU == 2)&&!(LRU == 4)&&!(LRU == 8)&&!(LRU == 16)&&!(LRU == 32)&&!(LRU == 64)&&!(LRU == 128)&&!(LRU == 256)&&!(LRU == 512)&&!(LRU == 1024)&&!(LRU == 2048)&&!(LRU == 4096)&&!(LRU == 8192)&&!(LRU == 16384)&&!(LRU == 32768)&&!(LRU == 65536)
+#error "LRU must be a power of 2, and no longer than 65536 elements."
+#endif
+
+#define HASHMASK \
+(\
+LRU >> 1 |\
+LRU >> 2 |\
+LRU >> 3 |\
+LRU >> 4 |\
+LRU >> 5 |\
+LRU >> 6 |\
+LRU >> 7 |\
+LRU >> 8 |\
+LRU >> 9 |\
+LRU >> 10 |\
+LRU >> 11 |\
+LRU >> 12 |\
+LRU >> 13 |\
+LRU >> 14 |\
+LRU >> 15 ) 
+
+#define SFREE(x) \
+\
+({\
+if(x)\
+free(x); \
+x=NULL;}) 
 
 /*** table ***/
 
-typedef struct raw
+typedef struct _lru_
 {
 
-  unsigned short v;
+  unsigned int yday; /* day of the year */
   unsigned long addr;
   char *host;
 
 }
 lru;
 
-static lru direct[MAX_LRU];
-static lru reverse[MAX_LRU];
+static lru hostbyname[LRU];
+static lru hostbyaddr[LRU];
 
 /*** private fuctions ***/
 
@@ -57,136 +95,106 @@ fatalerr (char *pattern, ...)
 
 }
 
+static
+#ifdef __GNUC__
+  __inline
+#else
+#endif
+  unsigned long
+hash (const char *key, int m)
+{
+  int hash, i;
+
+  if (key == NULL ) return 0;
+
+  for (hash = 0, i = 0; i<m ; ++i)
+    {
+      hash += key[i];
+      hash += (hash << 10);
+      hash ^= (hash >> 6);
+    }
+  hash += (hash << 3);
+  hash ^= (hash >> 11);
+  hash += (hash << 15);
+
+  return (hash & HASHMASK);
+}
+
+/* gethostbyname utils */
 
 static unsigned long
-search_direct_lru (const char *host)
+search_hostbyname (const char *host)
 {
   register int i = 0;
   register long ret = -1;
 
-  while (i < MAX_LRU)
-    {
-      if (direct[i].v)
-        {
-          if (!strcmp (host, direct[i].host))
-            ret = direct[i].addr;
+  i = hash(host, strlen(host));
 
-        }
+  /* null */
 
-      direct[i].v <<= 1;
+  if ( hostbyname[i].host == NULL )
+        return ret;
 
-      if (direct[i].v == 0)
-        {
-          if (direct[i].host)
-            {
-              free (direct[i].host);
-              direct[i].host = NULL;
-            }
+  if ( !strcmp(host,hostbyname[i].host ))
+        ret= hostbyname[i].addr;
 
-          direct[i].addr = 0;
-        }
+        return ret;
 
-      i++;
-    }
-
-  return ret;
 }
 
 static void
-insert_direct_lru (const char *host, const unsigned long addr)
+insert_hostbyname (const char *h, const unsigned long addr)
 {
-  register int i = 0;
-  register int j = 0;
+  register int i;
 
-  while ((i < MAX_LRU) && direct[j].v)
-    {
-      if (direct[i].v < direct[j].v)
-        j = i;
+  i = hash(h, strlen(h));
 
-      i++;
-    }
+  SFREE(hostbyname[i].host);
 
-  if (direct[j].host)
-    free (direct[j].host);
+  hostbyname[i].host = strdup (h);
+  hostbyname[i].addr = addr;
 
-  /* insert */
-
-  direct[j].v = 1;
-  direct[j].addr = addr;
-  direct[j].host = strdup (host);
-
+  return;
 }
 
+/* gethostbyaddr utils */
 
 static char *
-search_reverse_lru (const unsigned long addr)
+search_hostbyaddr (const unsigned long addr)
 {
-  register int i = 0;
+  register int i;
   static char *ret = NULL;
 
-  if (ret)
-    free (ret);
+  SFREE (ret);
 
-  ret = NULL;
+  if (!addr) return ret;
 
-  while (i < MAX_LRU)
-    {
+  i= hash ((char *)&addr,sizeof(long int));
 
-      if (reverse[i].v)
-        {
-          if (addr == reverse[i].addr)
-            ret = strdup (reverse[i].host);
-
-          reverse[i].v <<= 1;
-
-        }
-
-      if (reverse[i].v == 0)
-        {
-          if (reverse[i].host)
-            {
-              free (reverse[i].host);
-              reverse[i].host = NULL;
-            }
-
-          reverse[i].addr = 0;
-        }
-
-      i++;
-    }
+  if (addr == hostbyaddr[i].addr)
+      {
+      ret = strdup (hostbyaddr[i].host);
+      }
 
   return ret;
 }
 
-
 static void
-insert_reverse_lru (const char *h, const unsigned long addr)
+insert_hostbyaddr (const char *h, const unsigned long addr)
 {
-  register int i = 0;
-  register int j = 0;
+  register int i;
 
-  while (i < MAX_LRU && reverse[j].v)
-    {
-      if (reverse[i].v < reverse[j].v)
-        j = i;
-      i++;
-    }
+  i = hash ((char *)&addr,4);
 
-  if (reverse[j].host)
-    free (reverse[j].host);
+  SFREE (hostbyaddr[i].host);
 
-
-  /* insert */
-
-  reverse[j].v = 1;
-  reverse[j].addr = addr;
-  reverse[j].host = strdup (h);
+  hostbyaddr[i].host = strdup (h);
+  hostbyaddr[i].addr = addr;
 
   return;
 }
 
 /*** public function ***/
-
 
 unsigned long
 gethostbyname_lru (const char *host)
@@ -199,7 +207,7 @@ gethostbyname_lru (const char *host)
   if (host)
     {
 
-      if ((ret = search_direct_lru (host)) != -1)
+      if ((ret = search_hostbyname (host)) != -1)
         /* hit */
         {
           return ret;
@@ -210,21 +218,22 @@ gethostbyname_lru (const char *host)
       if ((addr.s_addr = inet_addr (host)) == -1)
         {
           if (!(host_ent = gethostbyname (host)))
-            fatalerr ("(gethostbyname_lru) err:%s", strerror (errno));
+            fatalerr ("gethostbyname_lru err:%s", strerror (errno));
 
           bcopy (host_ent->h_addr, (char *) &addr.s_addr, host_ent->h_length);
         }
 
-      insert_direct_lru (host, addr.s_addr);
+      insert_hostbyname (host, addr.s_addr);
       return addr.s_addr;
 
     }
   else
-    fatalerr ("(gethostbyname_lru) err: %s pointer", (char *) NULL);
+    fatalerr ("gethostbyname_lru err: %s pointer", (char *) NULL);
 
-  return 0;
+  return 0; /* unreachable */
 
 }
+
 
 char *
 gethostbyaddr_lru (unsigned long addr)
@@ -232,27 +241,35 @@ gethostbyaddr_lru (unsigned long addr)
   static char *ret = NULL;
   struct hostent *hostname;
 
-  if (ret)
-    free (ret);
-  ret = NULL;
 
-      if ((ret = search_reverse_lru (addr)) != NULL)
+  SFREE (ret);
+
+  if (addr == 0) return "0.0.0.0";
+
+
+  if (!(opt & OPT_NUM))
+    {
+
+      if ((ret = search_hostbyaddr (addr)) != NULL)
         /* hit */
         {
           ret = strdup (ret);
           return ret;
         }
-        /* fail */
-
+      /* fail */
       if ((hostname = gethostbyaddr ((char *) &addr, 0x04, AF_INET)) != NULL)
         ret = strdup (hostname->h_name);
       else
         ret = strdup (inet_ntoa (*(struct in_addr *) &addr));
 
-  if (ret)
-    insert_reverse_lru (ret, addr);
+    }
   else
-    fatalerr ("(gethostbyaddr_lru) err:%s", strerror (errno));
+    ret = strdup (inet_ntoa (*(struct in_addr *) &addr));
+
+  if (ret && addr)
+    insert_hostbyaddr (ret, addr);
+  else
+    fatalerr ("gethostbyaddr_lru err:%s", strerror (errno));
 
   return ret;
 }

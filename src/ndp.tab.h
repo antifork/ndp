@@ -1,4 +1,4 @@
-/* apg.db 01/06/18 rel 02 $Id$ */
+/* Id: apg.db,v 1.4 2001/06/29 12:23:48 awgn Exp  */
 /* 
  *  $Id$
  *  apg.tab.h
