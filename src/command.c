@@ -207,11 +207,18 @@ c_if (int _argc, char **_argv, char *null)
 			}
 
 
-		    /* Skip IFF_DOWN
-		     */
+                    /* IFF_UP & AF_INET
+                     */
 
-		    if ((ifreq_io.ifr_flags & 0x01))
-			send_msg (NULL, "%s:flags=<%hx> %s(%s)\n", ifr->ifr_name, ifreq_io.ifr_flags, gethostbyaddr_lru (ptr_if->sin_addr.s_addr), multi_inet_nbotoa (ptr_if->sin_addr.s_addr));
+                    if (ifreq_io.ifr_flags & IFF_UP )
+                        {
+                        if ( ifr->ifr_addr.sa_family == AF_INET)
+                                send_msg (NULL, "%s:flags=<%hx> %s(%s)\n", \
+                                        ifr->ifr_name, ifreq_io.ifr_flags, \
+                                        gethostbyaddr_lru (ptr_if->sin_addr.s_addr), \
+                                        multi_inet_nbotoa (ptr_if->sin_addr.s_addr));
+                        }
+
 		}
 	}
 
