@@ -57,7 +57,6 @@ accept_client (void)
   struct timeval delay = { 0, 100 };
   fd_set r_set;
 
-
   FD_ZERO (&r_set);
   FD_SET (fd_in, &r_set);
 
@@ -131,167 +130,180 @@ ushell (void)
   char last_char = 0;
   fd_set r_set, w_set;
 
-
   FD_ZERO (&r_set);
   FD_ZERO (&w_set);
 
   FD_SET (channel_ptr->fd_in, &w_set);
   FD_SET (channel_ptr->fd_in, &r_set);
 
-  if (select (FD_SETSIZE, &r_set, &w_set, NULL, &delay) < 0)
+  switch (select (FD_SETSIZE, &r_set, &w_set, NULL, &delay))
     {
+    case -1:
+      /* select error */
       shutdown_ (NULL);
       return _READY_;
-    }
-  /* Check MAXUSER exception */
+      break;
+    case 0:
+      /* Nothing to do */
+      return _NULL_;
+      break;
 
-  if ((channel_ptr->flag & _SHELL_) && (Nchannel > (ndp.conf.maxuser + 1))
-      && !(channel_ptr->class & CL_MASTER))
-    {
-      send_msg (NULL, MSG_MAXUSER_);
-      shutdown_ (NULL);
-      return _READY_;
+    default:
+      /* Check MAXUSER exception */
 
-    }
-  /* Check MAXTRIAL exception */
-
-  if ((channel_ptr->trial >= ndp.conf.maxerr) && (channel_ptr->flag & _LOGIN_))
-    {
-      send_msg (NULL, MSG_MAXTRIAL_);
-
-      if (ndp.log_level)
+      if ((channel_ptr->flag & _SHELL_) && (Nchannel > (ndp.conf.maxuser + 1))
+	  && !(channel_ptr->class & CL_MASTER))
 	{
+	  send_msg (NULL, MSG_MAXUSER_);
+	  shutdown_ (NULL);
+	  return _READY_;
+
+	}
+      /* Check MAXTRIAL exception */
+
+      if ((channel_ptr->trial >= ndp.conf.maxerr)
+	  && (channel_ptr->flag & _LOGIN_))
+	{
+	  send_msg (NULL, MSG_MAXTRIAL_);
+
 	  if (ndp.log_level)
-	    syslog (LOG_INFO,
-		    "possible intruder from:%s with gecos irc %s!%s",
-		    (char *) multi_inet_nbotoa (channel_ptr->
-						caller_addr.sin_addr.s_addr),
-		    (*(char *) (channel_ptr->usernick) ? (char *)
-		     channel_ptr->usernick : "unknown"),
-		    (*(char *) (channel_ptr->username) ? (char *)
-		     channel_ptr->username : "unknown"));
-	}
-      shutdown_ (NULL);
-      return _READY_;
-    }
-  /* Send msg login or prompt */
-
-  if (!(channel_ptr->opts & CH_PROMPT_))
-    {
-
-      channel_ptr->opts |= CH_PROMPT_;
-
-      if (channel_ptr->flag & _LOGIN_)
-	{
-	  if (channel_ptr->opts & CH_IRC_)
-	    send_msg (NULL, MSG_LOGIN_IRC);
-	  else
-	    send_msg (NULL, MSG_LOGIN_RAW);
-	}
-      else
-	{
-
-	  if (channel_ptr->opts & CH_IRC_)
 	    {
-	      if (channel_ptr->class & (CL_MASTER | CL_USER | CL_IRC1))
-		send_msg (NULL, MSG_PROMPT_IRCV);
-	      else
-		send_msg (NULL, MSG_PROMPT_IRC);
-
+	      if (ndp.log_level)
+		syslog (LOG_INFO,
+			"possible intruder from:%s with gecos irc %s!%s",
+			(char *) multi_inet_nbotoa (channel_ptr->
+						    caller_addr.sin_addr.
+						    s_addr),
+			(*(char *) (channel_ptr->usernick) ? (char *)
+			 channel_ptr->usernick : "unknown"),
+			(*(char *) (channel_ptr->username) ? (char *)
+			 channel_ptr->username : "unknown"));
 	    }
-	  else
-	    send_msg (NULL, MSG_PROMPT_RAW);
-
-	}
-    }
-  /* Watch to see if characters become available for reading */
-
-  if (FD_ISSET (channel_ptr->fd_in, &r_set))
-    {
-      rehash_time ();
-
-      if (read_from_channel (channel_ptr->fd_in, channel_ptr->buffer_in) ==
-	  -1)
-	return _NULL_;
-
-      irc_controller (channel_ptr->buffer_in);
-
-      last_char = getlastchar (channel_ptr->buffer_in);
-
-      if ((last_char == 0x06) && !(channel_ptr->opts & CH_IRC_))
-	{
-	  /* sign_break came in telnet only */
 	  shutdown_ (NULL);
 	  return _READY_;
 	}
-      if ((last_char == 0x0a))
+
+      /* Send msg login or prompt */
+
+      if (!(channel_ptr->opts & CH_PROMPT_))
 	{
 
-	  channel_ptr->opts &= ~CH_PROMPT_;
-	  (void) void_cr_lf (channel_ptr->buffer_in, 0);
+	  channel_ptr->opts |= CH_PROMPT_;
 
 	  if (channel_ptr->flag & _LOGIN_)
 	    {
-
-	      channel_ptr->class = (checkpass (channel_ptr->buffer_in));
-
-	      if (channel_ptr->class & ~CL_UNKNOWN)
-		{
-
-		  if ((ndp.opts & OPT_CONF_)
-		      && !(channel_ptr->class & CL_IRC3))
-		    {
-		      memset (channel_ptr->buffer_in, 0, CHAN_SIZE_BUFF);
-		      welcome ();
-		      return _SHELL_;
-		    }
-		  else
-		    {
-		      memset (channel_ptr->buffer_in, 0, CHAN_SIZE_BUFF);
-		      return _INPROGRESS_;
-
-		    }
-		}
+	      if (channel_ptr->opts & CH_IRC_)
+		send_msg (NULL, MSG_LOGIN_IRC);
 	      else
-		{
-		  (channel_ptr->trial)++;
-		  memset (channel_ptr->buffer_in, 0, CHAN_SIZE_BUFF);
-		  return _LOGIN_;
-		}
+		send_msg (NULL, MSG_LOGIN_RAW);
 	    }
 	  else
 	    {
-	      if (command_shell (channel_ptr->buffer_in) >= 0)
-		return _NULL_;
 
-	      else
+	      if (channel_ptr->opts & CH_IRC_)
 		{
-		  if (strlen (channel_ptr->buffer_in))
-		    send_msg (NULL, MSG_ERRPARSE_);
-		  memset (channel_ptr->buffer_in, 0, CHAN_SIZE_BUFF);
-		  return _SHELL_;
+		  if (channel_ptr->class & (CL_MASTER | CL_USER | CL_IRC1))
+		    send_msg (NULL, MSG_PROMPT_IRCV);
+		  else
+		    send_msg (NULL, MSG_PROMPT_IRC);
 
 		}
+	      else
+		send_msg (NULL, MSG_PROMPT_RAW);
 
 	    }
 	}
-    }
-  /* Check Timeout exception */
+
+      /* Watch to see if characters become available for reading */
+
+      if (FD_ISSET (channel_ptr->fd_in, &r_set))
+	{
+	  rehash_time ();
+
+	  if (read_from_channel (channel_ptr->fd_in, channel_ptr->buffer_in)
+	      == -1)
+	    return _NULL_;
+
+	  irc_controller (channel_ptr->buffer_in);
+
+	  last_char = getlastchar (channel_ptr->buffer_in);
+
+	  if ((last_char == 0x06) && !(channel_ptr->opts & CH_IRC_))
+	    {
+	      /* sign_break came in telnet only */
+	      shutdown_ (NULL);
+	      return _READY_;
+	    }
+	  if ((last_char == 0x0a))
+	    {
+
+	      channel_ptr->opts &= ~CH_PROMPT_;
+	      (void) void_cr_lf (channel_ptr->buffer_in, 0);
+
+	      if (channel_ptr->flag & _LOGIN_)
+		{
+
+		  channel_ptr->class = (checkpass (channel_ptr->buffer_in));
+
+		  if (channel_ptr->class & ~CL_UNKNOWN)
+		    {
+
+		      if ((ndp.opts & OPT_CONF_)
+			  && !(channel_ptr->class & CL_IRC3))
+			{
+			  memset (channel_ptr->buffer_in, 0, CHAN_SIZE_BUFF);
+			  welcome ();
+			  return _SHELL_;
+			}
+		      else
+			{
+			  memset (channel_ptr->buffer_in, 0, CHAN_SIZE_BUFF);
+			  return _INPROGRESS_;
+
+			}
+		    }
+		  else
+		    {
+		      (channel_ptr->trial)++;
+		      memset (channel_ptr->buffer_in, 0, CHAN_SIZE_BUFF);
+		      return _LOGIN_;
+		    }
+		}
+	      else
+		{
+		  if (command_shell (channel_ptr->buffer_in) >= 0)
+		    return _NULL_;
+		  else
+		    {
+		      if (strlen (channel_ptr->buffer_in))
+			send_msg (NULL, MSG_ERRPARSE_);
+		      memset (channel_ptr->buffer_in, 0, CHAN_SIZE_BUFF);
+		      return _SHELL_;
+
+		    }
+
+		}
+	    }
+	}
+      /* Check Timeout exception */
 
 #ifdef HAVE_GETTIMEOFDAY
-  gettimeofday (&delay, NULL);
+      gettimeofday (&delay, NULL);
 #else
-  delay.tv_sec = time (NULL);
-  delay.tv_usec = 0;
+      delay.tv_sec = time (NULL);
+      delay.tv_usec = 0;
 #endif
 
-  if (diff_time (delay.tv_sec, channel_ptr->sec) > ndp.conf.idlep)
-    {
-      send_msg (NULL, MSG_IDLE_);
-      shutdown_ (NULL);
-      return _READY_;
+      if (diff_time (delay.tv_sec, channel_ptr->sec) > ndp.conf.idlep)
+	{
+	  send_msg (NULL, MSG_IDLE_);
+	  shutdown_ (NULL);
+	  return _READY_;
+	}
+      return _NULL_;
+
+      break;
     }
-  return _NULL_;
 
 }
 
@@ -847,13 +859,13 @@ main (int argc, char *argv[])
   memset (CONF, 0, sizeof (CONF));
   memset (&ndp, 0, sizeof (ndp));
 
-  ndp.opts        |= OPT_AUTO_;
-  ndp.conf.idle    = _TIMEOUT_;
-  ndp.conf.idlep   = _PASSTIMEOUT_;
+  ndp.opts |= OPT_AUTO_;
+  ndp.conf.idle = _TIMEOUT_;
+  ndp.conf.idlep = _PASSTIMEOUT_;
   ndp.conf.maxuser = _MAXUSER_;
-  ndp.conf.maxerr  = _MAXERRONPASS_;
+  ndp.conf.maxerr = _MAXERRONPASS_;
 
-  ndp.log_level    = 2;
+  ndp.log_level = 2;
 
   exec_name = argv[0];
 
@@ -1025,7 +1037,7 @@ main (int argc, char *argv[])
 	  fprintf (stderr, "masstrial pass    : %d\n", ndp.conf.maxerr);
 	  fprintf (stderr, "Classes loaded    : %s%s%s%s%s\n",
 		   ((ndp.pass.master) ? "master " : ""),
-		   ((ndp.pass.user  ) ? "user " : ""),
+		   ((ndp.pass.user) ? "user " : ""),
 		   ((ndp.pass.ircer0) ? "ircer0 " : ""),
 		   ((ndp.pass.ircer1) ? "ircer1 " : ""),
 		   ((ndp.pass.ircer2) ? "ircer2 " : ""));
